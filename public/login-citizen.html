@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Login | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: var(--bg-page);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+      border-radius: var(--radius-lg);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .login-header svg {
+      color: var(--primary-brand);
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card animate-fade-up">
+    <div class="login-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <h1 class="text-2xl font-bold">Citizen Access</h1>
+      <p class="text-muted mt-2">Log in to report issues in your city.</p>
+    </div>
+    
+    <div id="error-msg" class="hidden text-sm text-center mb-4 p-2 rounded" style="background: var(--critical-light); color: var(--critical); border: 1px solid var(--critical-border);"></div>
+
+    <form id="login-form">
+      <div class="form-group mb-4">
+        <label for="email">Email</label>
+        <input type="text" id="email" name="email" placeholder="citizen@example.com" required>
+      </div>
+      <div class="form-group mb-6">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-full" style="width: 100%; padding: 1rem;">
+        Log In
+      </button>
+    </form>
+    
+    <div class="text-center mt-6 text-sm text-muted">
+      <p class="mb-2">Don't have an account? <a href="/register-citizen.html" style="color: var(--primary-brand); text-decoration: underline;">Sign Up</a></p>
+      <a href="/" style="color: var(--primary-brand); text-decoration: none;">&larr; Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('error-msg');
+      
+      errorMsg.classList.add('hidden');
+      
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          window.location.href = '/report.html';
+        } else {
+          errorMsg.textContent = data.error || 'Login failed';
+          errorMsg.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorMsg.textContent = 'Server error. Please try again.';
+        errorMsg.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

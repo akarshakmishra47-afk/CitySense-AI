@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">CivicPulse AI</a>
+      <nav>
+        <a href="/report.html" data-role="citizen">Report Issue</a>
+        <a href="/reports.html" class="active" data-role="citizen">My Reports</a>
+        <a href="/admin.html" data-role="admin">Command Center</a>
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 2rem;">
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-3xl mb-1 text-gradient font-bold tracking-wide">My Reports</h2>
+      <a href="/report.html" class="btn btn-primary">New Report</a>
+    </div>
+    
+    <div id="reports-list" class="grid grid-cols-2">
+      <p class="text-muted">Loading reports...</p>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/reports.js"></script>
+</body>
+</html>

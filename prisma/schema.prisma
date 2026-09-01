@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(uuid())
+  name      String
+  email     String      @unique
+  password  String      @default("") // Need default for existing records before migration
+  role      String      @default("citizen") // "citizen" or "admin"
+  createdAt DateTime    @default(now())
+  
+  complaints Complaint[]
+}
+
+model Complaint {
+  id           String   @id @default(uuid())
+  userId       String?
+  description  String
+  category     String?
+  subcategory  String?
+  severity     Int?
+  urgency      String?
+  durationDays Int?
+  latitude     Float?
+  longitude    Float?
+  address      String?
+  imageUrl     String?
+  aiSummary    String?
+  status       String   @default("submitted") // submitted, investigating, assigned, in_progress, resolved
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User?    @relation(fields: [userId], references: [id])
+  
+  clusters     ClusterComplaint[]
+}
+
+model ComplaintCluster {
+  id                      String   @id @default(uuid())
+  title                   String
+  category                String
+  probableRootCause       String?
+  rootCauseConfidence     Int?
+  priorityScore           Int      @default(0)
+  severityScore           Int      @default(0)
+  impactScore             Int      @default(0)
+  frequencyScore          Int      @default(0)
+  durationScore           Int      @default(0)
+  estimatedAffectedPeople Int      @default(0)
+  latitude                Float
+  longitude               Float
+  radius                  Float    @default(1.0)
+  recommendedAction       String?
+  evidence                String?  // Store JSON string array
+  status                  String   @default("investigating") // investigating, assigned, in_progress, resolved
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  complaints              ClusterComplaint[]
+}
+
+model ClusterComplaint {
+  clusterId   String
+  complaintId String
+  createdAt   DateTime @default(now())
+
+  cluster     ComplaintCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  complaint   Complaint        @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@id([clusterId, complaintId])
+}

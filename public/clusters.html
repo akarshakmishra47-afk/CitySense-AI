@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problems | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th {
+      padding: 1rem 1.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+      background: rgba(0,0,0,0.02);
+    }
+    td {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover {
+      background: var(--bg-surface-hover);
+      cursor: pointer;
+    }
+    .td-title {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+    .td-cause {
+      font-size: 0.85rem;
+      color: var(--primary-brand);
+      font-weight: 500;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CivicPulse AI
+      </a>
+      <nav>
+        <a href="/admin.html" data-role="admin">Command Center</a>
+        <a href="/admin-map.html" data-role="admin">Map</a>
+        <a href="/clusters.html" class="active" data-role="admin">Problems</a>
+        <a href="/analytics.html" data-role="admin">Analytics</a>
+
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 2rem;">
+    <div class="flex justify-between items-end mb-6">
+      <div>
+        <h2 class="text-2xl mb-1">Detected Problems</h2>
+        <p class="text-sm text-tertiary">All civic issues identified by AI clustering</p>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="clusters-table">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Problem & AI Hypothesis</th>
+            <th>Reports</th>
+            <th>Affected</th>
+            <th>Confidence</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="6" class="text-center p-6 text-muted">Loading problems...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const tbody = document.querySelector('#clusters-table tbody');
+      
+      try {
+        const res = await fetch('/api/clusters');
+        if (!res.ok) throw new Error('Failed to fetch');
+        let clusters = await res.json();
+        
+        // Sort by priority descending
+        clusters.sort((a, b) => b.priorityScore - a.priorityScore);
+        
+        tbody.innerHTML = '';
+        
+        clusters.forEach(c => {
+          const tr = document.createElement('tr');
+          const colorVar = appUtils.getPriorityBadgeClass(c.priorityScore).replace('badge-', '');
+          
+          tr.onclick = () => window.location.href = `/cluster-detail.html?id=${c.id}`;
+          
+          tr.innerHTML = `
+            <td>
+              <div class="flex items-center gap-2">
+                <div style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--${colorVar}-light); color:var(--${colorVar}); font-weight:800; font-size:0.85rem; border:1px solid var(--${colorVar}-border);">
+                  ${c.priorityScore}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="td-title flex items-center gap-2">
+                ${c.title}
+                ${c.probableRootCause ? `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2); font-size: 0.65rem; padding: 0.1rem 0.4rem;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 2px; display: inline-block;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  AI Analyzed
+                </span>` : ''}
+              </div>
+              ${c.probableRootCause ? `<div class="td-cause">${c.probableRootCause}</div>` : ''}
+            </td>
+            <td class="font-semibold">${c._count.complaints}</td>
+            <td class="font-semibold">${c.estimatedAffectedPeople}+</td>
+            <td>${c.rootCauseConfidence ? `${c.rootCauseConfidence}%` : '-'}</td>
+            <td><span class="badge" style="background:var(--bg-surface-hover); color:var(--text-secondary); border:1px solid var(--border-color);">${c.status.replace('_', ' ')}</span></td>
+          `;
+          
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--critical); padding:1.5rem;">${err.message}</td></tr>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicPulse AI | Actionable Civic Intelligence</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    /* Landing Page Specific Styles */
+    .hero {
+      padding: 6rem 0;
+      background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-page) 100%);
+      border-bottom: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    
+    .hero-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    
+    .hero .subtitle {
+      font-size: 1.125rem;
+      color: var(--primary-brand);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.5rem;
+    }
+    
+    .hero h2 {
+      font-size: 2rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.3;
+    }
+    
+    .hero p {
+      font-size: 1.125rem;
+      color: var(--text-tertiary);
+      margin-bottom: 2.5rem;
+      max-width: 500px;
+    }
+    
+    /* Hero Intelligence Panel */
+    .intelligence-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+    
+    .floating-report {
+      position: absolute;
+      background: white;
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+      animation: float 6s ease-in-out infinite;
+      z-index: 10;
+    }
+    
+    .fr-1 { top: -1rem; left: 10%; animation-delay: 0s; }
+    .fr-2 { top: 30%; right: -2rem; animation-delay: 1s; }
+    .fr-3 { bottom: -1rem; left: 20%; animation-delay: 2s; }
+    
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .panel-step {
+      text-align: center;
+      padding: 1rem;
+      background: var(--bg-page);
+      border-radius: var(--radius);
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border-color);
+    }
+    
+    .panel-arrow {
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 1.5rem;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Stats Strip */
+    .stats-strip {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 3rem 0;
+    }
+    
+    .stat-item {
+      text-align: center;
+      border-right: 1px solid var(--border-color);
+    }
+    .stat-item:last-child {
+      border-right: none;
+    }
+    
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Process Section */
+    .process-section {
+      padding: 6rem 0;
+      background: var(--bg-page);
+    }
+    
+    .process-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      align-items: stretch;
+    }
+    
+    .process-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      position: relative;
+      transition: all 0.3s;
+    }
+    .process-card:hover {
+      border-color: var(--primary-brand);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-5px);
+    }
+    
+    .process-num {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary-brand-light);
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      line-height: 1;
+    }
+    
+    /* Wow Section */
+    .wow-section {
+      padding: 8rem 0;
+      background: var(--bg-surface);
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .scattered-reports {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      max-width: 800px;
+      margin: 0 auto 3rem auto;
+    }
+    
+    .scattered-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+      animation: pulseIn 2s infinite alternate;
+    }
+    
+    .scattered-card:nth-child(even) { animation-delay: 1s; }
+    
+    @keyframes pulseIn {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.05); opacity: 1; border-color: var(--primary-brand); }
+    }
+    
+    .merged-problem-card {
+      background: var(--bg-page);
+      border: 2px solid var(--critical);
+      border-radius: var(--radius-lg);
+      padding: 3rem;
+      max-width: 600px;
+      margin: 3rem auto 0 auto;
+      box-shadow: 0 10px 30px rgba(239, 68, 68, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .merged-problem-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--critical);
+    }
+    
+    @media (max-width: 768px) {
+      .hero-content { grid-template-columns: 1fr; }
+      .process-grid { grid-template-columns: 1fr; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+      .stat-item:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CivicPulse AI
+      </a>
+      <nav>
+        <a href="/report.html" data-role="citizen">Report Issue</a>
+        <a href="/reports.html" data-role="citizen">My Reports</a>
+        <a href="/admin.html" data-role="admin">Command Center</a>
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-content animate-fade-up">
+        <div>
+          <div class="subtitle">AI-Powered Civic Intelligence</div>
+          <h1>TURNING SCATTERED CITIZEN REPORTS</h1>
+          <h2>INTO ACTIONABLE CITY INSIGHTS.</h2>
+          <p>CivicPulse connects fragmented citizen reports, detects emerging infrastructure problems, prioritizes their urgency, and helps authorities investigate what matters first.</p>
+          
+          <div class="flex gap-4">
+            <a href="/login-citizen.html" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Report a Problem
+            </a>
+            <a href="/login-admin.html" class="btn btn-secondary">
+              Open Command Center
+            </a>
+          </div>
+        </div>
+        
+        <div class="intelligence-panel animate-fade-up" style="animation-delay: 0.2s;">
+          <div class="floating-report fr-1">"Water leakage"</div>
+          <div class="floating-report fr-2">"Road flooding"</div>
+          <div class="floating-report fr-3">"Pipeline issue"</div>
+          
+          <div class="panel-step">
+            <div class="text-xs text-muted uppercase font-bold tracking-wider mb-1">Input</div>
+            <div class="font-bold">Citizen Reports</div>
+          </div>
+          <div class="panel-arrow">↓</div>
+          <div class="panel-step">
+            <div class="text-xs text-muted uppercase font-bold tracking-wider mb-1">Process</div>
+            <div class="font-bold text-primary-brand">AI Analysis</div>
+          </div>
+          <div class="panel-arrow">↓</div>
+          <div class="panel-step">
+            <div class="text-xs text-muted uppercase font-bold tracking-wider mb-1">Discovery</div>
+            <div class="font-bold">23 Related Reports</div>
+          </div>
+          <div class="panel-arrow">↓</div>
+          <div class="panel-step" style="background: var(--critical-light); border-color: var(--critical-border);">
+            <div class="text-xs text-critical uppercase font-bold tracking-wider mb-1" style="color: var(--critical);">Emerging Problem</div>
+            <div class="font-bold text-xl" style="color: var(--critical);">Pipeline Leakage</div>
+            <div class="badge badge-critical mt-2">94 / 100 CRITICAL</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS STRIP -->
+    <section class="stats-strip">
+      <div class="container grid grid-cols-4">
+        <div class="stat-item animate-fade-up" style="animation-delay: 0.3s;">
+          <div class="stat-number" id="landing-stat-reports">--</div>
+          <div class="stat-label">Citizen Reports</div>
+        </div>
+        <div class="stat-item animate-fade-up" style="animation-delay: 0.4s;">
+          <div class="stat-number" id="landing-stat-problems">--</div>
+          <div class="stat-label">Active Problems</div>
+        </div>
+        <div class="stat-item animate-fade-up" style="animation-delay: 0.5s;">
+          <div class="stat-number" id="landing-stat-critical" style="color: var(--critical);">--</div>
+          <div class="stat-label">Critical Issues</div>
+        </div>
+        <div class="stat-item animate-fade-up" style="animation-delay: 0.6s;">
+          <div class="stat-number" id="landing-stat-affected">--</div>
+          <div class="stat-label">Citizens Potentially Affected</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROCESS FLOW -->
+    <section class="process-section">
+      <div class="container">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold">HOW CIVICPULSE THINKS</h2>
+          <p class="text-muted">A systematic approach to urban problem solving.</p>
+        </div>
+        
+        <div class="process-grid">
+          <div class="process-card">
+            <div class="process-num">01</div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-4 text-primary-brand"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <h3 class="text-lg mb-2">REPORT</h3>
+            <p class="text-sm text-muted">Citizen submits a complaint regarding an issue in their neighborhood.</p>
+          </div>
+          <div class="process-card">
+            <div class="process-num">02</div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-4 text-primary-brand"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <h3 class="text-lg mb-2">UNDERSTAND</h3>
+            <p class="text-sm text-muted">AI extracts category, urgency, severity, and critical signals.</p>
+          </div>
+          <div class="process-card">
+            <div class="process-num">03</div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-4 text-primary-brand"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <h3 class="text-lg mb-2">CONNECT</h3>
+            <p class="text-sm text-muted">Related reports are clustered using language + location + category.</p>
+          </div>
+          <div class="process-card">
+            <div class="process-num">04</div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-4 text-primary-brand"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <h3 class="text-lg mb-2">DISCOVER</h3>
+            <p class="text-sm text-muted">CivicPulse identifies a probable underlying issue causing the symptoms.</p>
+          </div>
+          <div class="process-card" style="background: var(--primary-brand); color: white; border-color: var(--primary-brand);">
+            <div class="process-num" style="color: rgba(255,255,255,0.2);">05</div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <h3 class="text-lg mb-2" style="color: white;">PRIORITIZE</h3>
+            <p class="text-sm" style="color: rgba(255,255,255,0.9);">Authorities instantly see what needs attention first to maximize impact.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WOW SECTION -->
+    <section class="wow-section">
+      <div class="container">
+        <h2 class="text-4xl font-bold mb-12">THE PROBLEM HIDDEN INSIDE THE REPORTS</h2>
+        
+        <div class="scattered-reports">
+          <div class="scattered-card">"Road is flooded"</div>
+          <div class="scattered-card">"Water everywhere"</div>
+          <div class="scattered-card">"Pipeline may be broken"</div>
+          <div class="scattered-card">"Standing water"</div>
+          <div class="scattered-card">"Bad smell"</div>
+          <div class="scattered-card">"Can't cross the street"</div>
+          <div class="scattered-card">"Water pressure is low"</div>
+        </div>
+        
+        <div class="text-3xl text-tertiary mb-4">↓</div>
+        <div class="text-xl font-bold text-primary-brand uppercase tracking-wider mb-8">AI Analysis & Clustering</div>
+        <div class="text-3xl text-tertiary mb-4">↓</div>
+        
+        <div class="merged-problem-card">
+          <div class="text-sm font-bold text-muted uppercase tracking-wider mb-2">Emerging Problem</div>
+          <h1 class="text-5xl font-bold mb-4" style="color: var(--critical);">Underground Pipeline Leakage</h1>
+          
+          <div class="flex justify-center gap-8 mb-8 mt-6">
+            <div>
+              <div class="text-sm text-muted uppercase tracking-wider">Confidence</div>
+              <div class="text-2xl font-bold">87%</div>
+            </div>
+            <div>
+              <div class="text-sm text-muted uppercase tracking-wider">Priority</div>
+              <div class="text-2xl font-bold" style="color: var(--critical);">94 / 100 <span class="badge badge-critical ml-2" style="vertical-align: middle;">CRITICAL</span></div>
+            </div>
+            <div>
+              <div class="text-sm text-muted uppercase tracking-wider">Impact</div>
+              <div class="text-2xl font-bold">800+ potentially affected</div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/clusters');
+        if (res.ok) {
+          const clusters = await res.json();
+          let totalReports = 0;
+          let criticalCount = 0;
+          let totalAffected = 0;
+          
+          clusters.forEach(c => {
+            totalReports += c._count.complaints;
+            if (c.priorityScore >= 90) criticalCount++;
+            totalAffected += c.estimatedAffectedPeople;
+          });
+          
+          document.getElementById('landing-stat-reports').textContent = totalReports;
+          document.getElementById('landing-stat-problems').textContent = clusters.length;
+          document.getElementById('landing-stat-critical').textContent = criticalCount;
+          document.getElementById('landing-stat-affected').textContent = totalAffected > 1000 ? (totalAffected/1000).toFixed(1) + 'K' : totalAffected;
+        }
+      } catch (err) {
+        console.error('Failed to load landing stats', err);
+      }
+    });
+  </script>
+</body>
+</html>

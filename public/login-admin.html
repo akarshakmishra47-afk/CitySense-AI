@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: var(--bg-page);
+    }
+    .admin-theme body {
+      background-color: var(--bg-page);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 2.5rem 2rem;
+      border-radius: var(--radius-lg);
+      background-color: #1e293b; /* Admin dark surface */
+      border: 1px solid #334155;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+      color: #f8fafc;
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .login-header svg {
+      color: #3b82f6;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      color: #94a3b8;
+    }
+    .form-group input {
+      background-color: #0b1120;
+      border: 1px solid #334155;
+      color: #f8fafc;
+    }
+    .form-group input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  </style>
+</head>
+<body class="admin-theme">
+  <div class="login-card animate-fade-up">
+    <div class="login-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <h1 class="text-2xl font-bold text-white">Command Center</h1>
+      <p class="text-sm mt-2" style="color: #94a3b8;">Authorized City Personnel Only</p>
+    </div>
+    
+    <div id="error-msg" class="hidden text-sm text-center mb-4 p-2 rounded" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);"></div>
+
+    <form id="login-form">
+      <div class="form-group mb-4">
+        <label for="email" class="text-sm uppercase tracking-wider font-bold">Email</label>
+        <input type="text" id="email" name="email" placeholder="Enter your Admin ID" required>
+      </div>
+      <div class="form-group mb-6">
+        <label for="password" class="text-sm uppercase tracking-wider font-bold">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn w-full" style="background-color: #3b82f6; color: white; width: 100%; padding: 1rem; border: none; font-weight: bold; border-radius: 0.5rem; cursor: pointer;">
+        Access Dashboard
+      </button>
+    </form>
+    
+    <div class="text-center mt-6 text-sm">
+      <a href="/" style="color: #64748b; text-decoration: none;">&larr; Return to Home</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('error-msg');
+      
+      errorMsg.classList.add('hidden');
+      
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          // If admin, go to admin dashboard
+          if (data.role === 'admin') {
+            window.location.href = '/admin.html';
+          } else {
+            errorMsg.textContent = 'Unauthorized: Admin access required.';
+            errorMsg.classList.remove('hidden');
+            // Log them out since they are unauthorized here
+            await fetch('/api/auth/logout', { method: 'POST' });
+          }
+        } else {
+          errorMsg.textContent = data.error || 'Login failed';
+          errorMsg.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorMsg.textContent = 'Server error. Please try again.';
+        errorMsg.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Registration | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: var(--bg-page);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+      border-radius: var(--radius-lg);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .login-header svg {
+      color: var(--primary-brand);
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card animate-fade-up">
+    <div class="login-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+      <h1 class="text-2xl font-bold">Join CivicPulse</h1>
+      <p class="text-muted mt-2">Create an account to start reporting issues.</p>
+    </div>
+    
+    <div id="error-msg" class="hidden text-sm text-center mb-4 p-2 rounded" style="background: var(--critical-light); color: var(--critical); border: 1px solid var(--critical-border);"></div>
+
+    <form id="register-form">
+      <div class="form-group mb-4">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="John Doe" required>
+      </div>
+      <div class="form-group mb-4">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="john@example.com" required>
+      </div>
+      <div class="form-group mb-6">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Create a password" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-full" style="width: 100%; padding: 1rem;">
+        Sign Up
+      </button>
+    </form>
+    
+    <div class="text-center mt-6 text-sm text-muted">
+      <p class="mb-2">Already have an account? <a href="/login-citizen.html" style="color: var(--primary-brand); text-decoration: underline;">Log In</a></p>
+      <a href="/" style="color: var(--primary-brand); text-decoration: none;">&larr; Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('error-msg');
+      const btn = e.target.querySelector('button[type="submit"]');
+      
+      errorMsg.classList.add('hidden');
+      btn.textContent = 'Creating Account...';
+      btn.disabled = true;
+      
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          window.location.href = '/report.html';
+        } else {
+          errorMsg.textContent = data.error || 'Registration failed';
+          errorMsg.classList.remove('hidden');
+          btn.textContent = 'Sign Up';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        errorMsg.textContent = 'Server error. Please try again.';
+        errorMsg.classList.remove('hidden');
+        btn.textContent = 'Sign Up';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

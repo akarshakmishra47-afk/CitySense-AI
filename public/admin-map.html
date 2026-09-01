@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <style>
+    /* Admin Map Layout */
+    .map-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      height: calc(100vh - 180px);
+      margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 900px) {
+      .map-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      #map {
+        height: 50vh;
+      }
+    }
+    
+    .map-sidebar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .map-legend {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+    
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    /* Custom Leaflet Marker Icons */
+    .custom-div-icon {
+      background: transparent;
+      border: none;
+    }
+    .marker-pin {
+      width: 24px;
+      height: 24px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body class="admin-theme">
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CivicPulse AI
+      </a>
+      <nav>
+        <a href="/admin.html" data-role="admin">Command Center</a>
+        <a href="/admin-map.html" class="active" data-role="admin">Map</a>
+        <a href="/clusters.html" data-role="admin">Problems</a>
+        <a href="/analytics.html" data-role="admin">Analytics</a>
+
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 2rem;">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h2 class="text-2xl mb-1">Civic Operations Map</h2>
+        <p class="text-sm text-tertiary">Geographic distribution of AI-detected problems</p>
+      </div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background: var(--critical);"></div>Critical</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--high);"></div>High</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--medium);"></div>Medium</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--low);"></div>Low</div>
+      </div>
+    </div>
+    
+    <div class="map-layout">
+      <!-- Left: Map -->
+      <div id="map"></div>
+      
+      <!-- Right: Problem Intelligence Panel -->
+      <div class="map-sidebar" id="problem-panel">
+        <div class="empty-state">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2 mx-auto"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <p>Select a problem on the map to view intelligence.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/js/map.js"></script>
+</body>
+</html>

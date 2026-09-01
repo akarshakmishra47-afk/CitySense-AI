@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investigation | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Premium Dashboard Styles */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+    
+    @media (max-width: 900px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .panel-header {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+    
+    /* Horizontal Bar */
+    .bar-container {
+      margin-bottom: 1rem;
+    }
+    
+    .bar-label-wrap {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .bar-bg {
+      height: 8px;
+      background: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease-in-out;
+    }
+    
+    .report-card {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .report-card:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CivicPulse AI
+      </a>
+      <nav>
+        <a href="/admin.html" data-role="admin">Command Center</a>
+        <a href="/admin-map.html" data-role="admin">Map</a>
+        <a href="/clusters.html" class="active" data-role="admin">Problems</a>
+        <a href="/analytics.html" data-role="admin">Analytics</a>
+
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 1.5rem;">
+    <div class="mb-4">
+      <a href="/clusters.html" class="text-sm font-semibold" style="color:var(--text-tertiary); text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Problems
+      </a>
+    </div>
+
+    <div id="content">
+      <div class="text-center p-8 text-muted">
+        <div class="spinner mx-auto"></div>
+        <p>Loading intelligence data...</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/cluster.js"></script>
+</body>
+</html>

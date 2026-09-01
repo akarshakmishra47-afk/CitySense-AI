@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Center | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    /* Admin Specific Overrides */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 2.25rem;
+      margin-bottom: 0.25rem;
+    }
+    
+    .kpi-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .kpi-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .kpi-value {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    
+    .kpi-insight {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+    
+    /* Problem Card */
+    .problem-card {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 2rem;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .problem-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 4px;
+      background: var(--critical);
+    }
+    
+    /* Priority Ring */
+    .priority-ring-wrapper {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .priority-ring-bg {
+      fill: none;
+      stroke: var(--border-color);
+      stroke-width: 8;
+    }
+    
+    .priority-ring-progress {
+      fill: none;
+      stroke: var(--critical);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: stroke-dashoffset 1s ease-in-out;
+    }
+    
+    .priority-ring-text {
+      position: absolute;
+      text-align: center;
+    }
+    
+    .priority-ring-score {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .priority-ring-max {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    /* AI Insight Panel */
+    .ai-insight-panel {
+      background: rgba(37, 99, 235, 0.05);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+    }
+    
+    .ai-insight-panel .header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-brand);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    /* Utility for CSS Grid blowout prevention */
+    .min-w-0 {
+      min-width: 0;
+    }
+    .sticky-sidebar {
+      position: sticky;
+      top: 100px;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CivicPulse AI
+      </a>
+      <nav>
+        <a href="/admin.html" class="active" data-role="admin">Command Center</a>
+        <a href="/admin-map.html" data-role="admin">Map</a>
+        <a href="/clusters.html" data-role="admin">Problems</a>
+        <a href="/analytics.html" data-role="admin">Analytics</a>
+
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 3rem;">
+    <div class="dashboard-header">
+      <div>
+        <h2 class="text-3xl mb-1 text-gradient font-bold tracking-wide">Command Center</h2>
+        <p class="text-sm text-tertiary">Real-time intelligence and resource allocation dashboard</p>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-4 gap-6 mb-12">
+      <div class="card kpi-card animate-fade-up" style="animation-delay: 0.1s;">
+        <div class="kpi-label">Total Reports</div>
+        <div id="stat-reports" class="kpi-value">--</div>
+        <div class="kpi-insight">Across all categories</div>
+      </div>
+      <div class="card kpi-card animate-fade-up" style="animation-delay: 0.2s;">
+        <div class="kpi-label">Active Problems</div>
+        <div id="stat-problems" class="kpi-value">--</div>
+        <div class="kpi-insight">AI detected clusters</div>
+      </div>
+      <div class="card kpi-card animate-fade-up" style="animation-delay: 0.3s;">
+        <div class="kpi-label">Critical Problems</div>
+        <div id="stat-critical" class="kpi-value" style="color:var(--critical);">--</div>
+        <div class="kpi-insight">Requires attention</div>
+      </div>
+      <div class="card kpi-card animate-fade-up" style="animation-delay: 0.4s;">
+        <div class="kpi-label">Citizens Affected</div>
+        <div id="stat-affected" class="kpi-value">--</div>
+        <div class="kpi-insight">Across active clusters</div>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem;">
+      <!-- Main Content -->
+      <div class="min-w-0">
+        <div class="mb-6">
+          <h2 class="text-xl">Priority Problems</h2>
+          <p class="text-tertiary text-sm">AI-ranked civic issues requiring immediate attention</p>
+        </div>
+        
+        <div id="priority-list">
+          <p class="text-muted">Loading priority problems...</p>
+        </div>
+      </div>
+      
+      <!-- Right Sidebar: Global AI Insight (Optional, but let's have a placeholder or static summary) -->
+      <div class="min-w-0">
+        <div class="ai-insight-panel sticky-sidebar">
+          <div class="header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            System Intelligence
+          </div>
+          <p id="system-insight-text" class="text-sm mb-4">Gathering system intelligence...</p>
+          <div class="p-3 mb-4" style="background: var(--bg-surface); border-radius: var(--radius); border: 1px solid var(--border-color);">
+            <div class="text-xs font-bold text-muted uppercase mb-1">Current Focus</div>
+            <div id="current-focus-text" class="text-sm font-semibold">Analyzing...</div>
+          </div>
+          <p class="text-xs text-tertiary">
+            AI-generated insight intended to support investigation. Physical conditions should be verified by authorized personnel.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+
+
+  <script src="/js/app.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

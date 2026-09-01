@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Detail | CivicPulse AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">CivicPulse AI</a>
+      <nav>
+        <a href="/report.html" data-role="citizen">Report Issue</a>
+        <a href="/reports.html" class="active" data-role="citizen">My Reports</a>
+        <a href="/admin.html" data-role="admin">Command Center</a>
+      </nav>
+      <div class="role-switcher" id="role-switcher"></div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 2rem; max-width: 800px;">
+    <div class="mb-4">
+      <a href="/reports.html" class="text-sm text-muted" style="text-decoration:none;">&larr; Back to My Reports</a>
+    </div>
+
+    <div id="content">
+      <p>Loading...</p>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+      const content = document.getElementById('content');
+
+      if (!id) {
+        content.innerHTML = '<p class="text-muted">No report ID provided.</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/complaints/${id}`);
+        if (!res.ok) throw new Error('Report not found');
+        const data = await res.json();
+
+        let clusterHtml = '';
+        if (data.clusters && data.clusters.length > 0) {
+          const cluster = data.clusters[0].cluster;
+          clusterHtml = `
+            <div class="card mt-4" style="border-left: 4px solid var(--primary-brand);">
+              <h4 class="mb-2 text-sm text-muted">CivicPulse Connection</h4>
+              <p class="mb-2">Your report has been connected to a larger civic issue:</p>
+              <h3>${cluster.title}</h3>
+              
+              ${cluster.probableRootCause ? `
+                <div class="mt-4 p-4" style="background:var(--bg-primary); border-radius:var(--radius);">
+                  <p class="text-sm text-muted mb-1">Probable underlying issue</p>
+                  <p style="font-weight:600; color:var(--text-primary);">${cluster.probableRootCause}</p>
+                  <p class="text-sm mt-1">Confidence: ${cluster.rootCauseConfidence}%</p>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        content.innerHTML = `
+          <div class="card">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <span class="badge ${appUtils.getPriorityBadgeClass(data.severity)} mb-2">${data.category || 'Issue'}</span>
+                <h2>${data.aiSummary || 'Report Detail'}</h2>
+              </div>
+              <span class="badge" style="background:#e2e8f0; color:#0f172a; border:none; padding:0.5rem 1rem;">${data.status.replace('_', ' ').toUpperCase()}</span>
+            </div>
+
+            <p class="text-sm text-muted mb-4">Reported on ${appUtils.formatDate(data.createdAt)}</p>
+
+            <div class="mb-4">
+              <h4 class="text-sm text-muted mb-1">Description</h4>
+              <p>${data.description}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <h4 class="text-sm text-muted mb-1">Severity Score</h4>
+                <p>${data.severity}/100</p>
+              </div>
+              <div>
+                <h4 class="text-sm text-muted mb-1">Location</h4>
+                <p>${data.address || (data.latitude ? `${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}` : 'Not provided')}</p>
+              </div>
+            </div>
+
+            ${data.imageUrl ? `
+              <div class="mb-4">
+                <img src="${data.imageUrl}" alt="Report photo" style="max-width:100%; border-radius:var(--radius); border:1px solid var(--border-color);">
+              </div>
+            ` : ''}
+          </div>
+
+          ${clusterHtml}
+        `;
+      } catch (error) {
+        content.innerHTML = `<p style="color:var(--critical)">${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
