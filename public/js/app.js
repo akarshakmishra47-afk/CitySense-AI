@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const session = await checkSession();
   setupNavigation(session);
+  setupLanguageToggle();
 });
 
 async function checkSession() {
@@ -100,3 +101,52 @@ window.appUtils = {
   getPriorityLabel,
   formatDate
 };
+
+function setupLanguageToggle() {
+  const script = document.createElement('script');
+  script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+  document.head.appendChild(script);
+
+  window.googleTranslateElementInit = function() {
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'en,hi',
+      autoDisplay: false
+    }, 'google_translate_element');
+  };
+
+  const gtDiv = document.createElement('div');
+  gtDiv.id = 'google_translate_element';
+  gtDiv.style.display = 'none';
+  document.body.appendChild(gtDiv);
+
+  const style = document.createElement('style');
+  style.innerHTML = `
+    body { top: 0 !important; }
+    .skiptranslate { display: none !important; }
+    #google_translate_element { display: none !important; }
+  `;
+  document.head.appendChild(style);
+
+  const header = document.querySelector('.header-inner');
+  if (header) {
+    const btn = document.createElement('button');
+    const isHindi = document.cookie.includes('googtrans=/en/hi');
+    btn.innerHTML = isHindi ? '🌐 HI' : '🌐 EN';
+    btn.style.cssText = 'background: transparent; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: var(--text-primary); margin-left: auto; font-weight: bold; font-size: 0.8rem; height: 28px; display: flex; align-items: center;';
+    
+    btn.addEventListener('click', () => {
+      const domain = window.location.hostname;
+      if (isHindi) {
+        document.cookie = 'googtrans=/en/en; path=/';
+        document.cookie = 'googtrans=/en/en; domain=.' + domain + '; path=/';
+      } else {
+        document.cookie = 'googtrans=/en/hi; path=/';
+        document.cookie = 'googtrans=/en/hi; domain=.' + domain + '; path=/';
+      }
+      window.location.reload();
+    });
+    
+    header.appendChild(btn);
+  }
+}
