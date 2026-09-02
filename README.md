@@ -15,21 +15,21 @@ HTML, CSS, Vanilla JavaScript, Node.js, Express.js, SQLite, Prisma, OpenAI, Leaf
 
 ## Architecture
 Citizen
-   â†“
+   ↓
 HTML/CSS/JavaScript
-   â†“
+   ↓
 Express API
-   â†“
+   ↓
 AI Analysis
-   â†“
+   ↓
 SQLite + Prisma
-   â†“
+   ↓
 Clustering Engine
-   â†“
+   ↓
 Probable Root Cause
-   â†“
+   ↓
 Priority Engine
-   â†“
+   ↓
 Admin Dashboard
 
 ## Setup

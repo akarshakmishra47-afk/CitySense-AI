@@ -10,17 +10,39 @@ const JWT_SECRET = process.env.JWT_SECRET || 'citysense_secret_key_123!';
 // POST /api/auth/login
 router.post('/login', async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
     
-    // --- HACKATHON MVP BYPASS ---
-    // Instantly log in any user without checking database or password
-    const role = (email && email.toLowerCase().includes('admin')) ? 'admin' : 'citizen';
-    const name = role === 'admin' ? 'City Authority' : 'Citizen User';
-    const safeEmail = email || (role === 'admin' ? 'admin@citysense.ai' : 'demo@citysense.ai');
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    let user = await User.findOne({ email });
+
+    // --- HACKATHON DEMO FALLBACK ---
+    // If the judges use the exact demo credentials but the database wasn't seeded,
+    // we create the accounts on the fly so the demo never fails.
+    if (!user && password === '123456') {
+      if (email === 'admin@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'City Authority', email: 'admin@123', password: hashedPassword, role: 'admin' });
+      } else if (email === 'citizen@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen' });
+      }
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
     // Create JWT
     const token = jwt.sign(
-      { id: '64f7b2c9e4b0a1b2c3d4e5f6', role, name, email: safeEmail }, // Mock valid Mongo ObjectID
+      { id: user._id || user.id, role: user.role, name: user.name, email: user.email },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -33,7 +55,7 @@ router.post('/login', async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
 
-    res.json({ success: true, role, name });
+    res.json({ success: true, role: user.role, name: user.name });
   } catch (error) {
     next(error);
   }

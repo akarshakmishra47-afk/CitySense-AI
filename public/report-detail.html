@@ -84,7 +84,7 @@
           progressHtml += `
             <div style="display: flex; flex-direction: column; z-index: 3; align-items: center; width: 20%;">
               <div style="width: 28px; height: 28px; border-radius: 50%; background: ${bg}; border: 2px solid ${border}; display: flex; align-items: center; justify-content: center; color: ${color}; font-weight: bold; font-size: 12px; margin-bottom: 0.5rem;">
-                ${isActive ? 'âœ“' : idx + 1}
+                ${isActive ? '✓' : idx + 1}
               </div>
               <div style="font-size: 0.75rem; text-align: center; color: ${isCurrent ? 'var(--text-primary)' : 'var(--text-muted)'}; font-weight: ${isCurrent ? 'bold' : 'normal'}; text-transform: uppercase;">
                 ${s.replace('_', ' ')}
