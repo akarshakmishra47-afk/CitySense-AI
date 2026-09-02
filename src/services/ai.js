@@ -12,10 +12,9 @@ const AiResponseSchema = z.object({
 });
 
 let groq = null;
-if (process.env.OPENAI_API_KEY) {
-  // Use OPENAI_API_KEY for backward compatibility or change it to GROQ_API_KEY if desired.
-  // The user provided the groq key in OPENAI_API_KEY.
-  groq = new Groq({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+if (apiKey) {
+  groq = new Groq({ apiKey: apiKey });
 }
 
 async function analyzeComplaint(description, durationDays = 0) {
