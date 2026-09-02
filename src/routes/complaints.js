@@ -11,17 +11,8 @@ const { calculatePriority } = require('../services/priority-engine');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'citysense_secret_key_123!';
 
-// Setup Multer for image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads/');
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Setup Multer to use memory storage for Vercel serverless compatibility
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage: storage,
@@ -94,7 +85,12 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res, next) 
     const durationDays = parseInt(duration, 10) || 1;
     const lat = parseFloat(latitude) || 0;
     const lng = parseFloat(longitude) || 0;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    let imageUrl = null;
+    if (req.file) {
+      const base64Image = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      imageUrl = `data:${mimeType};base64,${base64Image}`;
+    }
 
     const { processNewComplaint } = require('../services/complaint-processor');
     const { complaint, analysis, clusterId } = await processNewComplaint(req.body, req.user.id, imageUrl);
