@@ -3,6 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const connectDB = require('./config/db');
+
+// Connect to Database
+connectDB();
 
 const complaintsRoutes = require('./routes/complaints');
 const clustersRoutes = require('./routes/clusters');

@@ -1,37 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const Complaint = require('../models/Complaint');
+const ComplaintCluster = require('../models/ComplaintCluster');
 const { generateSystemInsight } = require('../services/ai');
 
 // GET /api/analytics
 router.get('/', async (req, res, next) => {
   try {
-    // 1. Reports by category
-    const categoryCounts = await prisma.complaintCluster.groupBy({
-      by: ['category'],
-      _count: {
-        _all: true
-      }
-    });
-
-    // We actually want the total complaints by category, not just clusters
-    const complaintsByCategory = await prisma.complaint.groupBy({
-      by: ['category'],
-      _count: {
-        _all: true
-      }
-    });
+    // 1. Reports by category (using MongoDB Aggregation)
+    const complaintsByCategory = await Complaint.aggregate([
+      { $group: { _id: "$category", count: { $sum: 1 } } }
+    ]);
 
     const categoryData = complaintsByCategory.map(item => ({
-      category: item.category || 'Unknown',
-      count: item._count._all
+      category: item._id || 'Unknown',
+      count: item.count
     }));
 
     // 2. Priority distribution (from clusters)
-    const clusters = await prisma.complaintCluster.findMany({
-      select: { priorityScore: true }
-    });
+    const clusters = await ComplaintCluster.find({}, 'priorityScore');
 
     const priorityDist = { Critical: 0, High: 0, Medium: 0, Low: 0 };
     clusters.forEach(c => {
@@ -46,10 +33,10 @@ router.get('/', async (req, res, next) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(now.getDate() - 7);
     
-    const recentComplaints = await prisma.complaint.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
-      select: { createdAt: true }
-    });
+    const recentComplaints = await Complaint.find(
+      { createdAt: { $gte: sevenDaysAgo } },
+      'createdAt'
+    );
 
     const timelineObj = {};
     for (let i = 6; i >= 0; i--) {
@@ -75,7 +62,7 @@ router.get('/', async (req, res, next) => {
     const emergingInsight = await generateSystemInsight(categoryData, timelineData);
 
     // 5. System Status (Real dynamic data)
-    const totalComplaints = await prisma.complaint.count();
+    const totalComplaints = await Complaint.countDocuments();
     const systemStatus = {
       model: "Qwen 3.8-27B",
       processed: totalComplaints,

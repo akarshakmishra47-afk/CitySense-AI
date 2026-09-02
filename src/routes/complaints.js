@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const Complaint = require('../models/Complaint');
+const ComplaintCluster = require('../models/ComplaintCluster');
 const multer = require('multer');
 const path = require('path');
 const jwt = require('jsonwebtoken');
@@ -53,12 +53,10 @@ const authMiddleware = (req, res, next) => {
 // GET /api/complaints
 router.get('/', authMiddleware, async (req, res, next) => {
   try {
-    const whereClause = req.user.role === 'admin' ? {} : { userId: req.user.id };
-    const complaints = await prisma.complaint.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      include: { clusters: { include: { cluster: true } } }
-    });
+    const query = req.user.role === 'admin' ? {} : { user: req.user.id };
+    const complaints = await Complaint.find(query)
+      .sort({ createdAt: -1 })
+      .populate('clusters'); // Replace Prisma include
     res.json(complaints);
   } catch (error) {
     next(error);
@@ -68,13 +66,13 @@ router.get('/', authMiddleware, async (req, res, next) => {
 // GET /api/complaints/:id
 router.get('/:id', authMiddleware, async (req, res, next) => {
   try {
-    const complaint = await prisma.complaint.findUnique({
-      where: { id: req.params.id },
-      include: { clusters: { include: { cluster: true } } }
-    });
+    const complaint = await Complaint.findById(req.params.id)
+      .populate('clusters');
+      
     if (!complaint) return res.status(404).json({ error: "Complaint not found" });
     
-    if (req.user.role !== 'admin' && complaint.userId !== req.user.id) {
+    // Convert ObjectIds to strings for comparison
+    if (req.user.role !== 'admin' && complaint.user?.toString() !== req.user.id) {
       return res.status(403).json({ error: "Forbidden. Not your report." });
     }
     
@@ -102,28 +100,23 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res, next) 
     const analysis = await analyzeComplaint(description, durationDays);
 
     // 2. Store Complaint
-    const complaint = await prisma.complaint.create({
-      data: {
-        userId: req.user.id,
-        description,
-        category: analysis.category,
-        subcategory: analysis.subcategory,
-        severity: analysis.severity,
-        urgency: analysis.urgency,
-        durationDays,
-        latitude: lat,
-        longitude: lng,
-        address,
-        imageUrl,
-        aiSummary: analysis.summary
-      }
+    const complaint = await Complaint.create({
+      user: req.user.id,
+      description,
+      category: analysis.category,
+      subcategory: analysis.subcategory,
+      severity: analysis.severity,
+      urgency: analysis.urgency,
+      durationDays,
+      latitude: lat,
+      longitude: lng,
+      address,
+      imageUrl,
+      aiSummary: analysis.summary
     });
 
     // 3. Find Matching Cluster
-    // Get all clusters created recently within 2km (simplification for MVP: get all and filter in memory)
-    const existingClusters = await prisma.complaintCluster.findMany({
-      include: { _count: { select: { complaints: true } } }
-    });
+    const existingClusters = await ComplaintCluster.find().populate('complaints');
 
     let bestCluster = null;
     let highestSimilarity = 0.4; // Threshold
@@ -140,46 +133,38 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res, next) 
 
     if (bestCluster) {
       // 4a. Attach to existing cluster
-      await prisma.clusterComplaint.create({
-        data: {
-          clusterId: bestCluster.id,
-          complaintId: complaint.id
-        }
-      });
       finalCluster = bestCluster;
+      finalCluster.complaints.push(complaint._id);
+      await finalCluster.save();
+      
+      complaint.clusters.push(finalCluster._id);
+      await complaint.save();
     } else {
       // 4b. Create new cluster
-      finalCluster = await prisma.complaintCluster.create({
-        data: {
-          title: `${analysis.category} — ${address || 'Unknown Location'}`,
-          category: analysis.category,
-          latitude: lat,
-          longitude: lng,
-          priorityScore: calculatePriority(analysis.severity, 10, 10, durationDays).score
-        }
+      finalCluster = await ComplaintCluster.create({
+        title: `${analysis.category} — ${address || 'Unknown Location'}`,
+        category: analysis.category,
+        latitude: lat,
+        longitude: lng,
+        priorityScore: calculatePriority(analysis.severity, 10, 10, durationDays).score,
+        complaints: [complaint._id]
       });
-      await prisma.clusterComplaint.create({
-        data: {
-          clusterId: finalCluster.id,
-          complaintId: complaint.id
-        }
-      });
+      
+      complaint.clusters.push(finalCluster._id);
+      await complaint.save();
     }
 
     // 5. Recalculate Priority & Root Cause for the cluster
-    const clusterComplaints = await prisma.clusterComplaint.findMany({
-      where: { clusterId: finalCluster.id },
-      include: { complaint: true }
-    });
-
-    const count = clusterComplaints.length;
-    const totalSeverity = clusterComplaints.reduce((acc, cc) => acc + (cc.complaint.severity || 50), 0);
+    const updatedCluster = await ComplaintCluster.findById(finalCluster._id).populate('complaints');
+    
+    const count = updatedCluster.complaints.length;
+    const totalSeverity = updatedCluster.complaints.reduce((acc, c) => acc + (c.severity || 50), 0);
     const avgSeverity = totalSeverity / count;
     
     // Simple heuristics for priority components
     const impact = Math.min(100, count * 15 + (parseInt(affectedPeople) || 0) / 10);
     const frequency = Math.min(100, count * 20);
-    const maxDuration = Math.max(...clusterComplaints.map(cc => cc.complaint.durationDays || 1));
+    const maxDuration = Math.max(...updatedCluster.complaints.map(c => c.durationDays || 1));
     const durationScore = Math.min(100, maxDuration * 5);
 
     const priority = calculatePriority(avgSeverity, impact, frequency, durationScore);
@@ -187,8 +172,8 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res, next) 
     // Check root cause
     let rootCauseData = {};
     if (count >= 3) {
-      const descriptions = clusterComplaints.map(c => c.complaint.description);
-      const aiInsights = await generateRootCause(finalCluster.category, descriptions);
+      const descriptions = updatedCluster.complaints.map(c => c.description);
+      const aiInsights = await generateRootCause(updatedCluster.category, descriptions);
       
       rootCauseData = {
         probableRootCause: aiInsights.probableRootCause,
@@ -198,24 +183,21 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res, next) 
       };
     }
 
-    await prisma.complaintCluster.update({
-      where: { id: finalCluster.id },
-      data: {
-        priorityScore: priority.score,
-        severityScore: priority.breakdown.severity,
-        impactScore: priority.breakdown.impact,
-        frequencyScore: priority.breakdown.frequency,
-        durationScore: priority.breakdown.duration,
-        estimatedAffectedPeople: Math.min(count * 30 + (parseInt(affectedPeople) || 0), 10000),
-        ...rootCauseData
-      }
+    await ComplaintCluster.findByIdAndUpdate(finalCluster._id, {
+      priorityScore: priority.score,
+      severityScore: priority.breakdown.severity,
+      impactScore: priority.breakdown.impact,
+      frequencyScore: priority.breakdown.frequency,
+      durationScore: priority.breakdown.duration,
+      estimatedAffectedPeople: Math.min(count * 30 + (parseInt(affectedPeople) || 0), 10000),
+      ...rootCauseData
     });
 
     res.status(201).json({
       message: "Complaint submitted successfully",
       complaint,
       analysis,
-      clusterId: finalCluster.id
+      clusterId: finalCluster._id
     });
 
   } catch (error) {

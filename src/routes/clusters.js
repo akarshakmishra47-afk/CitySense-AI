@@ -1,19 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const ComplaintCluster = require('../models/ComplaintCluster');
 
 // GET /api/clusters
 router.get('/', async (req, res, next) => {
   try {
-    const clusters = await prisma.complaintCluster.findMany({
-      orderBy: { priorityScore: 'desc' },
-      include: {
-        _count: {
-          select: { complaints: true }
-        }
-      }
-    });
+    const clusters = await ComplaintCluster.find()
+      .sort({ priorityScore: -1 })
+      .populate('complaints'); // We populate if we need the count, or we can just return array length
+
     const parsedClusters = clusters.map(c => {
       let evidence = [];
       if (c.evidence) {
@@ -23,7 +18,11 @@ router.get('/', async (req, res, next) => {
           evidence = [c.evidence];
         }
       }
-      return { ...c, evidence };
+      return { 
+        ...c.toJSON(), 
+        evidence,
+        _count: { complaints: c.complaints.length }
+      };
     });
 
     res.json(parsedClusters);
@@ -35,25 +34,15 @@ router.get('/', async (req, res, next) => {
 // GET /api/clusters/:id
 router.get('/:id', async (req, res, next) => {
   try {
-    const cluster = await prisma.complaintCluster.findUnique({
-      where: { id: req.params.id },
-      include: {
-        complaints: {
-          include: { complaint: true }
-        },
-        _count: {
-          select: { complaints: true }
-        }
-      }
-    });
+    const cluster = await ComplaintCluster.findById(req.params.id)
+      .populate('complaints');
     
     if (!cluster) return res.status(404).json({ error: "Cluster not found" });
 
     // Format the timeline (simplified: group complaints by days ago)
     const now = new Date();
     const timelineObj = {};
-    cluster.complaints.forEach(cc => {
-      const c = cc.complaint;
+    cluster.complaints.forEach(c => {
       const diffTime = Math.abs(now - new Date(c.createdAt));
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       const dayLabel = diffDays === 0 ? "Today" : `${diffDays} days ago`;
@@ -86,9 +75,10 @@ router.get('/:id', async (req, res, next) => {
     }
 
     res.json({
-      ...cluster,
+      ...cluster.toJSON(),
       timeline,
-      evidence
+      evidence,
+      _count: { complaints: cluster.complaints.length }
     });
   } catch (error) {
     next(error);
@@ -105,10 +95,11 @@ router.patch('/:id', async (req, res, next) => {
       return res.status(400).json({ error: "Invalid status" });
     }
 
-    const cluster = await prisma.complaintCluster.update({
-      where: { id: req.params.id },
-      data: { status }
-    });
+    const cluster = await ComplaintCluster.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
 
     res.json(cluster);
   } catch (error) {

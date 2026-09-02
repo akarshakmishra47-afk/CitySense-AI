@@ -2,7 +2,7 @@ services:
   - type: web
     name: civicpulse-ai
     env: node
-    buildCommand: npm install && npx prisma db push && npm run seed
+    buildCommand: npm install && npm run seed
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
