@@ -36,9 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <h4 class="mb-2" style="font-size:1.1rem">${c.aiSummary || 'Civic Issue'}</h4>
         <p class="text-sm text-muted mb-4" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.description}</p>
-        <div class="flex justify-between items-center text-sm">
-          <span style="color:var(--primary-brand)">${isClustered ? 'Linked to Civic Problem' : 'Under Review'}</span>
-          <span class="badge" style="background:#e2e8f0; border:none;">${c.status.replace('_', ' ')}</span>
+        <div class="flex justify-between items-center text-sm mt-4 pt-4" style="border-top: 1px solid var(--border-color);">
+          <span style="color:var(--text-secondary)">Status: <span style="font-weight:bold; color:var(--text-primary);">${c.status.replace('_', ' ').toUpperCase()}</span></span>
+          <span style="color:var(--primary-brand); font-weight:bold;">Track Progress &rarr;</span>
         </div>
       `;
       container.appendChild(card);

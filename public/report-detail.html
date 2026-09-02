@@ -67,6 +67,33 @@
           `;
         }
 
+        const statuses = ['submitted', 'assigned', 'investigating', 'in_progress', 'resolved'];
+        const currentStatusIndex = statuses.indexOf(data.status) !== -1 ? statuses.indexOf(data.status) : 0;
+        
+        let progressHtml = '<div style="display: flex; justify-content: space-between; position: relative; margin: 2rem 0;">';
+        progressHtml += '<div style="position: absolute; top: 12px; left: 10%; right: 10%; height: 4px; background: var(--border-color); z-index: 1;"></div>';
+        const progressWidth = (currentStatusIndex / (statuses.length - 1)) * 80;
+        progressHtml += `<div style="position: absolute; top: 12px; left: 10%; width: ${progressWidth}%; height: 4px; background: var(--primary-brand); z-index: 2; transition: width 0.5s;"></div>`;
+        
+        statuses.forEach((s, idx) => {
+          const isActive = idx <= currentStatusIndex;
+          const isCurrent = idx === currentStatusIndex;
+          const bg = isActive ? 'var(--primary-brand)' : 'var(--bg-surface)';
+          const border = isActive ? 'var(--primary-brand)' : 'var(--border-color)';
+          const color = isActive ? 'white' : 'var(--text-muted)';
+          progressHtml += `
+            <div style="display: flex; flex-direction: column; z-index: 3; align-items: center; width: 20%;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: ${bg}; border: 2px solid ${border}; display: flex; align-items: center; justify-content: center; color: ${color}; font-weight: bold; font-size: 12px; margin-bottom: 0.5rem;">
+                ${isActive ? '✓' : idx + 1}
+              </div>
+              <div style="font-size: 0.75rem; text-align: center; color: ${isCurrent ? 'var(--text-primary)' : 'var(--text-muted)'}; font-weight: ${isCurrent ? 'bold' : 'normal'}; text-transform: uppercase;">
+                ${s.replace('_', ' ')}
+              </div>
+            </div>
+          `;
+        });
+        progressHtml += '</div>';
+
         content.innerHTML = `
           <div class="card">
             <div class="flex justify-between items-start mb-4">
@@ -74,8 +101,11 @@
                 <span class="badge ${appUtils.getPriorityBadgeClass(data.severity)} mb-2">${data.category || 'Issue'}</span>
                 <h2>${data.aiSummary || 'Report Detail'}</h2>
               </div>
-              <span class="badge" style="background:#e2e8f0; color:#0f172a; border:none; padding:0.5rem 1rem;">${data.status.replace('_', ' ').toUpperCase()}</span>
             </div>
+            
+            ${progressHtml}
+
+            <hr style="border-color: var(--border-color); margin: 2rem 0;">
 
             <p class="text-sm text-muted mb-4">Reported on ${appUtils.formatDate(data.createdAt)}</p>
 
