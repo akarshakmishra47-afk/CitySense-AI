@@ -1,6 +1,5 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Complaint = require('./models/Complaint');
 const ComplaintCluster = require('./models/ComplaintCluster');
@@ -10,70 +9,90 @@ async function seed() {
     await mongoose.connect(process.env.DATABASE_URL);
     console.log('MongoDB Connected');
 
-    // Create Admin User
-    const existingAdmin = await User.findOne({ email: "Admin123@" });
-    if (!existingAdmin) {
-      await User.create({
-        name: "System Admin",
-        email: "Admin123@",
-        password: await bcrypt.hash('123456', 10),
-        role: "admin"
+    // Clear existing data for a fresh demo
+    await Complaint.deleteMany({});
+    await ComplaintCluster.deleteMany({});
+    
+    // Create demo user
+    let demoUser = await User.findOne({ email: "demo@civicpulse.ai" });
+    if (!demoUser) {
+      demoUser = await User.create({
+        name: "Demo Citizen",
+        email: "demo@civicpulse.ai",
+        password: "password123",
+        role: "citizen"
       });
-      console.log('Admin user seeded.');
-    } else {
-      existingAdmin.password = await bcrypt.hash('123456', 10);
-      await existingAdmin.save();
-      console.log('Admin password reset.');
     }
 
-    // Creating sample data
-    const existingComplaints = await Complaint.countDocuments();
-    if (existingComplaints === 0) {
-      console.log('Creating sample data...');
-      
-      const admin = await User.findOne({ email: "Admin123@" });
-      
-      const sampleCluster = await ComplaintCluster.create({
-        title: "Water - Main St",
-        category: "Water",
-        latitude: 34.0522,
-        longitude: -118.2437,
-        priorityScore: 85,
-        severityScore: 90,
-        impactScore: 80,
-        frequencyScore: 70,
-        durationScore: 100,
-        estimatedAffectedPeople: 500,
-        status: "investigating"
-      });
+    console.log('Creating Hackathon MVP Demo Data...');
 
-      const sampleComplaint = await Complaint.create({
-        user: admin._id,
-        description: "Water pipe burst on Main St, flooding the intersection.",
+    // Demo Data Definitions
+    const demoLat = 28.6139; // Example coordinates
+    const demoLng = 77.2090;
+
+    const complaints = [
+      "Water flowing onto road",
+      "Road flooding",
+      "Underground pipe suspected",
+      "Continuous water flow",
+      "Standing water",
+      "Bad smell"
+    ];
+
+    const savedComplaints = [];
+
+    // Create 6 complaints
+    for (let i = 0; i < complaints.length; i++) {
+      const c = await Complaint.create({
+        user: demoUser._id,
+        description: complaints[i],
         category: "Water",
-        subcategory: "Leak",
-        severity: 90,
+        subcategory: "Leakage",
+        severity: 85 + (i * 2), // varied severity
         urgency: "High",
-        durationDays: 1,
-        latitude: 34.0522,
-        longitude: -118.2437,
-        address: "Main St",
+        durationDays: 4,
+        latitude: demoLat + (Math.random() * 0.002 - 0.001), // slightly clustered coordinates
+        longitude: demoLng + (Math.random() * 0.002 - 0.001),
+        address: "XYZ Colony",
         status: "submitted",
-        clusters: [sampleCluster._id]
+        imageUrl: "",
+        clusters: [] // will add later
       });
-
-      sampleCluster.complaints.push(sampleComplaint._id);
-      await sampleCluster.save();
-      
-      console.log('Sample data seeded successfully.');
-    } else {
-      console.log('Sample data already exists. Skipping.');
+      savedComplaints.push(c);
     }
 
-    console.log('The system is ready for live operational data.');
+    // Create 1 consolidated issue cluster
+    const cluster = await ComplaintCluster.create({
+      title: "Potential Water Infrastructure Failure",
+      category: "Water Infrastructure",
+      latitude: demoLat,
+      longitude: demoLng,
+      priorityScore: 88,
+      severityScore: 92,
+      impactScore: 85,
+      frequencyScore: 90,
+      durationScore: 80,
+      estimatedAffectedPeople: 450,
+      probableRootCause: "Pipeline leakage / drainage failure",
+      confidence: 82,
+      recommendedAction: "Inspect local pipeline and drainage network.",
+      status: "investigating",
+      complaints: savedComplaints.map(c => c._id)
+    });
+
+    // Update complaints to point to cluster
+    for (let c of savedComplaints) {
+      c.clusters.push(cluster._id);
+      await c.save();
+    }
+
+    console.log('o. Hackathon Demo Data seeded successfully!');
+    console.log('o. 6 Citizen Complaints generated.');
+    console.log('o. 1 Issue Cluster formed with AI analysis.');
+    
     process.exit(0);
   } catch (err) {
-    console.error(err);
+    console.error('?O Database seeding failed:', err);
     process.exit(1);
   }
 }

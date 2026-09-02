@@ -411,31 +411,8 @@
   </main>
 
   <script src="/js/app.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/clusters');
-        if (res.ok) {
-          const clusters = await res.json();
-          let totalReports = 0;
-          let criticalCount = 0;
-          let totalAffected = 0;
-          
-          clusters.forEach(c => {
-            totalReports += c._count.complaints;
-            if (c.priorityScore >= 90) criticalCount++;
-            totalAffected += c.estimatedAffectedPeople;
-          });
-          
-          document.getElementById('landing-stat-reports').textContent = totalReports;
-          document.getElementById('landing-stat-problems').textContent = clusters.length;
-          document.getElementById('landing-stat-critical').textContent = criticalCount;
-          document.getElementById('landing-stat-affected').textContent = totalAffected > 1000 ? (totalAffected/1000).toFixed(1) + 'K' : totalAffected;
-        }
-      } catch (err) {
-        console.error('Failed to load landing stats', err);
-      }
-    });
-  </script>
+
 </body>
 </html>
+
+
