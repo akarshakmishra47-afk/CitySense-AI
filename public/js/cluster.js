@@ -88,10 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="text-xs text-tertiary">${appUtils.formatDate(cc.createdAt)}</div>
                     <div class="text-xs font-bold px-2 py-1 rounded" style="background: var(--${sColor}-light); color: var(--${sColor}); border: 1px solid var(--${sColor}-border);">${cc.severity}/100 Severity</div>
                   </div>
-                  <p class="text-sm text-primary mb-2">${cc.summary}</p>
+                  <p class="text-sm text-primary mb-2">${cc.aiSummary || cc.description}</p>
                   ${cc.imageUrl ? `
                     <div class="mb-3">
-                      <img src="${cc.imageUrl}" alt="Citizen uploaded evidence" style="max-height: 120px; border-radius: var(--radius); border: 1px solid var(--border-color); object-fit: cover;">
+                      <a href="${cc.imageUrl}" target="_blank">
+                        <img src="${cc.imageUrl}" alt="Citizen uploaded evidence" style="max-height: 120px; border-radius: var(--radius); border: 1px solid var(--border-color); object-fit: cover; cursor: pointer;">
+                      </a>
                     </div>
                   ` : ''}
                   <div class="text-xs text-secondary flex gap-4">

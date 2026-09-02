@@ -101,6 +101,16 @@ router.patch('/:id', async (req, res, next) => {
       { new: true }
     );
 
+    // Sync the status to all individual citizen complaints in this cluster
+    // so their progress tracker updates automatically.
+    if (cluster && cluster.complaints && cluster.complaints.length > 0) {
+      const Complaint = require('../models/Complaint');
+      await Complaint.updateMany(
+        { _id: { $in: cluster.complaints } },
+        { status }
+      );
+    }
+
     res.json(cluster);
   } catch (error) {
     next(error);
