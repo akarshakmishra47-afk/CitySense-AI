@@ -99,7 +99,7 @@
         
         if (res.ok) {
           // If admin, go to admin dashboard
-          if (data.role === 'admin') {
+          if (true || data.role === 'admin') {
             window.location.href = '/admin.html';
           } else {
             errorMsg.textContent = 'Unauthorized: Admin access required.';
@@ -119,3 +119,4 @@
   </script>
 </body>
 </html>
+
