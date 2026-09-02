@@ -2,7 +2,7 @@ services:
   - type: web
     name: civicpulse-ai
     env: node
-    buildCommand: npm install && npx prisma migrate deploy
+    buildCommand: npm install && npx prisma migrate deploy && npm run seed
     startCommand: npm start
     disk:
       name: data
