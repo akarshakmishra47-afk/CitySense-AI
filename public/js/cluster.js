@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               </div>
               <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2rem;">${c.probableRootCause}</h2>
               
-              <div class="text-xs uppercase tracking-wider font-bold text-muted mb-4">Why CivicPulse Thinks This</div>
+              <div class="text-xs uppercase tracking-wider font-bold text-muted mb-4">Why CitySense Thinks This</div>
               <div class="grid grid-cols-2 gap-4 mb-6">
                 ${c.evidence.map(e => `
                   <div class="flex items-start gap-2">

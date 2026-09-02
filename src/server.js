@@ -24,11 +24,14 @@ app.use(express.static(path.join(__dirname, '../public')));
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadDir));
 
+const cronRoutes = require('./routes/cron');
+
 // Routes
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/clusters', clustersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/cron', cronRoutes);
 // Fallback to index.html for unmatched routes (if using HTML5 history API, though we use distinct HTML files here)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
@@ -42,7 +45,7 @@ app.use((err, req, res, next) => {
 
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
-    console.log(`CivicPulse AI running on http://localhost:${PORT}`);
+    console.log(`CitySense AI running on http://localhost:${PORT}`);
   });
 }
 

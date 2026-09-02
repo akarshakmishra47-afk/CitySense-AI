@@ -163,8 +163,65 @@ Do not use pleasantries or introductory text. Just output the single sentence. F
   }
 }
 
+const MockComplaintSchema = z.object({
+  complaints: z.array(z.object({
+    description: z.string(),
+    duration: z.number().min(1),
+    latitude: z.number(),
+    longitude: z.number(),
+    address: z.string(),
+    affectedPeople: z.number().min(0)
+  }))
+});
+
+async function generateMockComplaints(count = 5) {
+  if (!groq) {
+    throw new Error("AI is not configured. Missing API key.");
+  }
+
+  try {
+    const response = await groq.chat.completions.create({
+      model: "qwen/qwen3.8-27b",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert realistic test data generator. Generate exactly ${count} highly realistic, varied citizen complaints set in random real cities in India (e.g. Mumbai, Delhi, Bangalore, Chennai, Pune).
+These must sound like real angry or concerned citizens reporting civic issues.
+Include appropriate latitudes and longitudes roughly matching the cities chosen.
+Output strictly valid JSON matching this schema:
+{
+  "complaints": [
+    {
+      "description": "string (the raw complaint from citizen)",
+      "duration": 5 (number of days it has been an issue),
+      "latitude": 19.0760,
+      "longitude": 72.8777,
+      "address": "string (realistic Indian street address or landmark)",
+      "affectedPeople": 50 (estimated number of affected people)
+    }
+  ]
+}`
+        },
+        {
+          role: "user",
+          content: `Generate ${count} realistic Indian civic complaints.`
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const parsed = JSON.parse(response.choices[0].message.content);
+    const validated = MockComplaintSchema.parse(parsed);
+    return validated.complaints;
+  } catch (error) {
+    console.error("Groq mock generation failed:", error.message);
+    return [];
+  }
+}
+
 module.exports = {
   analyzeComplaint,
   generateRootCause,
-  generateSystemInsight
+  generateSystemInsight,
+  generateMockComplaints
 };

@@ -14,11 +14,11 @@ async function seed() {
     await ComplaintCluster.deleteMany({});
     
     // Create demo user
-    let demoUser = await User.findOne({ email: "demo@civicpulse.ai" });
+    let demoUser = await User.findOne({ email: "demo@citysense.ai" });
     if (!demoUser) {
       demoUser = await User.create({
         name: "Demo Citizen",
-        email: "demo@civicpulse.ai",
+        email: "demo@citysense.ai",
         password: "password123",
         role: "citizen"
       });

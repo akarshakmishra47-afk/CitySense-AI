@@ -1,5 +1,5 @@
 {
-  "name": "civicpulse-ai",
+  "name": "citysense-ai",
   "version": "1.0.0",
   "description": "Turning scattered citizen complaints into actionable civic intelligence.",
   "main": "src/server.js",

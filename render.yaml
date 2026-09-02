@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: civicpulse-ai
+    name: citysense-ai
     env: node
     buildCommand: npm install && npm run seed
     startCommand: npm start

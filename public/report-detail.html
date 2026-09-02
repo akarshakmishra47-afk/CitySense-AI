@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Report Detail | CivicPulse AI</title>
+  <title>Report Detail | CitySense AI</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
   <header>
     <div class="container header-inner">
-      <a href="/" class="logo">CivicPulse AI</a>
+      <a href="/" class="logo">CitySense AI</a>
       <nav>
         <a href="/report.html" data-role="citizen">Report Issue</a>
         <a href="/reports.html" class="active" data-role="citizen">My Reports</a>
@@ -52,7 +52,7 @@
           const cluster = data.clusters[0].cluster;
           clusterHtml = `
             <div class="card mt-4" style="border-left: 4px solid var(--primary-brand);">
-              <h4 class="mb-2 text-sm text-muted">CivicPulse Connection</h4>
+              <h4 class="mb-2 text-sm text-muted">CitySense Connection</h4>
               <p class="mb-2">Your report has been connected to a larger civic issue:</p>
               <h3>${cluster.title}</h3>
               
@@ -84,7 +84,7 @@
           progressHtml += `
             <div style="display: flex; flex-direction: column; z-index: 3; align-items: center; width: 20%;">
               <div style="width: 28px; height: 28px; border-radius: 50%; background: ${bg}; border: 2px solid ${border}; display: flex; align-items: center; justify-content: center; color: ${color}; font-weight: bold; font-size: 12px; margin-bottom: 0.5rem;">
-                ${isActive ? '✓' : idx + 1}
+                ${isActive ? 'âœ“' : idx + 1}
               </div>
               <div style="font-size: 0.75rem; text-align: center; color: ${isCurrent ? 'var(--text-primary)' : 'var(--text-muted)'}; font-weight: ${isCurrent ? 'bold' : 'normal'}; text-transform: uppercase;">
                 ${s.replace('_', ' ')}
