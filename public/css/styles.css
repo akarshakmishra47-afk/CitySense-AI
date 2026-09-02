@@ -138,9 +138,9 @@ header {
 
 .header-inner {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   width: 100%;
+  gap: 1.5rem;
 }
 
 .logo {
@@ -155,8 +155,9 @@ header {
 
 nav {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   height: 100%;
+  margin-right: auto;
 }
 
 nav a {

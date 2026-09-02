@@ -133,7 +133,7 @@ function setupLanguageToggle() {
     const btn = document.createElement('button');
     const isHindi = document.cookie.includes('googtrans=/en/hi');
     btn.innerHTML = isHindi ? '🌐 HI' : '🌐 EN';
-    btn.style.cssText = 'background: transparent; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: var(--text-primary); margin-left: auto; font-weight: bold; font-size: 0.8rem; height: 28px; display: flex; align-items: center;';
+    btn.style.cssText = 'background: transparent; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: var(--text-primary); margin-left: 1rem; font-weight: bold; font-size: 0.8rem; height: 28px; display: flex; align-items: center;';
     
     btn.addEventListener('click', () => {
       const domain = window.location.hostname;

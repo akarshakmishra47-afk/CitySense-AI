@@ -6,7 +6,8 @@ async function loadDashboardData() {
   try {
     const res = await fetch('/api/clusters');
     if (!res.ok) throw new Error('Failed to load clusters');
-    const clusters = await res.json();
+    const allClusters = await res.json();
+    const clusters = allClusters.filter(c => c.status !== 'resolved');
     
     // Calculate stats
     let totalReports = 0;
