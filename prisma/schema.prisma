@@ -3,15 +3,15 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String      @id @default(uuid())
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   email     String      @unique
-  password  String      @default("") // Need default for existing records before migration
+  password  String      @default("")
   role      String      @default("citizen") // "citizen" or "admin"
   createdAt DateTime    @default(now())
   
@@ -19,8 +19,8 @@ model User {
 }
 
 model Complaint {
-  id           String   @id @default(uuid())
-  userId       String?
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String?  @db.ObjectId
   description  String
   category     String?
   subcategory  String?
@@ -42,7 +42,7 @@ model Complaint {
 }
 
 model ComplaintCluster {
-  id                      String   @id @default(uuid())
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
   title                   String
   category                String
   probableRootCause       String?
@@ -66,12 +66,13 @@ model ComplaintCluster {
 }
 
 model ClusterComplaint {
-  clusterId   String
-  complaintId String
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  clusterId   String   @db.ObjectId
+  complaintId String   @db.ObjectId
   createdAt   DateTime @default(now())
 
   cluster     ComplaintCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
   complaint   Complaint        @relation(fields: [complaintId], references: [id], onDelete: Cascade)
 
-  @@id([clusterId, complaintId])
+  @@unique([clusterId, complaintId])
 }

@@ -7,7 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node prisma/seed.js",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma db push",
     "postinstall": "prisma generate"
   },
   "dependencies": {

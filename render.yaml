@@ -2,19 +2,13 @@ services:
   - type: web
     name: civicpulse-ai
     env: node
-    buildCommand: npm install && npx prisma migrate deploy && npm run seed
+    buildCommand: npm install && npx prisma db push && npm run seed
     startCommand: npm start
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: DATABASE_URL
-        value: file:/data/civicpulse.db
-      - key: UPLOAD_DIR
-        value: /data/uploads
+        sync: false # Requires manual entry in Render dashboard (e.g., MongoDB Atlas URI)
       - key: NODE_VERSION
-        value: 18.17.0 # Replace with your Node version if different
+        value: 18.17.0
       - key: GROQ_API_KEY
         sync: false # Requires manual entry in Render dashboard
       - key: JWT_SECRET
