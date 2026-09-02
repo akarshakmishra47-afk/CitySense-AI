@@ -81,17 +81,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div style="max-height: 400px; overflow-y: auto; padding-right: 1rem;">
               ${c.complaints.map(cc => {
-                const sColor = appUtils.getPriorityBadgeClass(cc.complaint.severity).replace('badge-', '');
+                const sColor = appUtils.getPriorityBadgeClass(cc.severity).replace('badge-', '');
                 return `
                 <div class="report-card">
                   <div class="flex justify-between items-start mb-2">
-                    <div class="text-xs text-tertiary">${appUtils.formatDate(cc.complaint.createdAt)}</div>
-                    <div class="text-xs font-bold px-2 py-1 rounded" style="background: var(--${sColor}-light); color: var(--${sColor}); border: 1px solid var(--${sColor}-border);">${cc.complaint.severity}/100 Severity</div>
+                    <div class="text-xs text-tertiary">${appUtils.formatDate(cc.createdAt)}</div>
+                    <div class="text-xs font-bold px-2 py-1 rounded" style="background: var(--${sColor}-light); color: var(--${sColor}); border: 1px solid var(--${sColor}-border);">${cc.severity}/100 Severity</div>
                   </div>
-                  <p class="text-sm text-primary mb-2">${cc.complaint.summary}</p>
+                  <p class="text-sm text-primary mb-2">${cc.summary}</p>
                   <div class="text-xs text-secondary flex gap-4">
-                    <span><strong>Cat:</strong> ${cc.complaint.category}</span>
-                    <span><strong>Loc:</strong> ${cc.complaint.latitude.toFixed(4)}, ${cc.complaint.longitude.toFixed(4)}</span>
+                    <span><strong>Cat:</strong> ${cc.category}</span>
+                    <span><strong>Loc:</strong> ${cc.latitude.toFixed(4)}, ${cc.longitude.toFixed(4)}</span>
                   </div>
                 </div>
               `}).join('')}
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function renderTimelineChart(complaintsData) {
   // Sort complaints by date
-  const sorted = [...complaintsData].sort((a, b) => new Date(a.complaint.createdAt) - new Date(b.complaint.createdAt));
+  const sorted = [...complaintsData].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   
   if (sorted.length === 0) return;
 
@@ -214,7 +214,7 @@ function renderTimelineChart(complaintsData) {
   const countsByDay = {};
   
   sorted.forEach(c => {
-    const date = new Date(c.complaint.createdAt).toLocaleDateString();
+    const date = new Date(c.createdAt).toLocaleDateString();
     countsByDay[date] = (countsByDay[date] || 0) + 1;
   });
   
