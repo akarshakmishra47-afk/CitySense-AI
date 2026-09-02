@@ -92,20 +92,17 @@
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, roleHint: 'admin' })
         });
         
         const data = await res.json();
         
         if (res.ok) {
-          // If admin, go to admin dashboard
-          if (true || data.role === 'admin') {
+          if (data.role === 'admin') {
             window.location.href = '/admin.html';
           } else {
-            errorMsg.textContent = 'Unauthorized: Admin access required.';
+            errorMsg.textContent = 'Admin login failed. Please try again.';
             errorMsg.classList.remove('hidden');
-            // Log them out since they are unauthorized here
-            await fetch('/api/auth/logout', { method: 'POST' });
           }
         } else {
           errorMsg.textContent = data.error || 'Login failed';
@@ -119,4 +116,3 @@
   </script>
 </body>
 </html>
-

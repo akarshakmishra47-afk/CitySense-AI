@@ -10,11 +10,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'civicpulse_secret_key_123!';
 // POST /api/auth/login
 router.post('/login', async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, roleHint } = req.body;
     
     // --- HACKATHON MVP BYPASS ---
     // Instantly log in any user without checking database or password
-    const role = (email && email.toLowerCase().includes('admin')) ? 'admin' : 'citizen';
+    const normalizedRoleHint = typeof roleHint === 'string' ? roleHint.toLowerCase() : '';
+    const roleFromHint = normalizedRoleHint === 'admin' || normalizedRoleHint === 'citizen' ? normalizedRoleHint : null;
+    const role = roleFromHint || ((email && email.toLowerCase().includes('admin')) ? 'admin' : 'citizen');
     const name = role === 'admin' ? 'City Authority' : 'Citizen User';
     const safeEmail = email || (role === 'admin' ? 'admin@civicpulse.ai' : 'demo@civicpulse.ai');
 
