@@ -221,8 +221,8 @@ async function seed() {
       ward: "7"
     });
 
-    // Generate mock data for the other 14 Nagar Nigams
-    const otherNigams = [
+    // Generate 5 mock clusters for all 17 Nagar Nigams
+    const allNigams = [
       { corp: "Agra", lat: 27.1767, lng: 78.0081 },
       { corp: "Aligarh", lat: 27.8974, lng: 78.0880 },
       { corp: "Ayodhya", lat: 26.7922, lng: 82.1998 },
@@ -231,29 +231,50 @@ async function seed() {
       { corp: "Ghaziabad", lat: 28.6692, lng: 77.4538 },
       { corp: "Gorakhpur", lat: 26.7606, lng: 83.3732 },
       { corp: "Jhansi", lat: 25.4484, lng: 78.5685 },
+      { corp: "Kanpur", lat: 26.4499, lng: 80.3319 },
+      { corp: "Lucknow", lat: 26.8467, lng: 80.9462 },
       { corp: "Meerut", lat: 28.9845, lng: 77.7064 },
       { corp: "Moradabad", lat: 28.8386, lng: 78.7733 },
       { corp: "Prayagraj", lat: 25.4358, lng: 81.8463 },
       { corp: "Saharanpur", lat: 29.9640, lng: 77.5460 },
       { corp: "Shahjahanpur", lat: 27.8804, lng: 79.9126 },
+      { corp: "Varanasi", lat: 25.3176, lng: 82.9739 },
       { corp: "Mathura-Vrindavan", lat: 27.4924, lng: 77.6737 }
     ];
 
-    for (let i = 0; i < otherNigams.length; i++) {
-      const n = otherNigams[i];
-      await ComplaintCluster.create({
-        title: "Standard Infrastructure Maintenance",
-        category: "Infrastructure",
-        latitude: n.lat,
-        longitude: n.lng,
-        priorityScore: 30 + (i * 2),
-        status: i % 2 === 0 ? "resolved" : "in_progress",
-        complaints: [],
-        state: "Uttar Pradesh",
-        municipalCorp: n.corp,
-        localBodyType: "Nagar Nigam",
-        ward: "1"
-      });
+    const problemTemplates = [
+      { title: "Severe Water Contamination", cat: "Water", root: "Broken municipal pipeline crossing sewer lines." },
+      { title: "Major Streetlight Outage", cat: "Streetlights", root: "Main transformer failure in the zone." },
+      { title: "Widespread Pothole Clusters", cat: "Roads", root: "Poor quality asphalt washed away by monsoon." },
+      { title: "Illegal Waste Dumping", cat: "Garbage", root: "Lack of designated waste bins in commercial area." },
+      { title: "Sewer Line Blockage", cat: "Drainage", root: "Plastic waste accumulation in primary drainage." }
+    ];
+
+    for (const n of allNigams) {
+      for (let j = 0; j < problemTemplates.length; j++) {
+        const pt = problemTemplates[j];
+        // Add some jitter to coords so they aren't all exactly on top of each other
+        const jLat = n.lat + (Math.random() * 0.04 - 0.02);
+        const jLng = n.lng + (Math.random() * 0.04 - 0.02);
+        
+        const statuses = ["investigating", "assigned", "in_progress", "resolved", "escalated"];
+        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+        
+        await ComplaintCluster.create({
+          title: pt.title,
+          category: pt.cat,
+          probableRootCause: pt.root,
+          latitude: jLat,
+          longitude: jLng,
+          priorityScore: Math.floor(Math.random() * 50) + 40, // 40 to 90
+          status: randomStatus,
+          complaints: [],
+          state: "Uttar Pradesh",
+          municipalCorp: n.corp,
+          localBodyType: "Nagar Nigam",
+          ward: (Math.floor(Math.random() * 50) + 1).toString()
+        });
+      }
     }
 
     // --- Nagar Palika Parishad ---
