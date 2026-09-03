@@ -20,7 +20,10 @@ async function seed() {
         name: "Demo Citizen",
         email: "demo@citysense.ai",
         password: "password123",
-        role: "citizen"
+        role: "citizen",
+        state: "Maharashtra",
+        municipalCorp: "Navi Mumbai",
+        ward: "64"
       });
     }
 
@@ -51,17 +54,40 @@ async function seed() {
         severity: 85 + (i * 2), // varied severity
         urgency: "High",
         durationDays: 4,
-        latitude: demoLat + (Math.random() * 0.002 - 0.001), // slightly clustered coordinates
+        latitude: demoLat + (Math.random() * 0.002 - 0.001), 
         longitude: demoLng + (Math.random() * 0.002 - 0.001),
         address: "XYZ Colony",
         status: "submitted",
         imageUrl: "",
-        clusters: [] // will add later
+        clusters: [],
+        state: "Maharashtra",
+        municipalCorp: "Navi Mumbai",
+        ward: "64"
       });
       savedComplaints.push(c);
     }
+    
+    // Create 1 complaint for a different ward (Ward 65)
+    const otherWardComplaint = await Complaint.create({
+      user: demoUser._id,
+      description: "Huge pothole causing accidents",
+      category: "Roads",
+      subcategory: "Pothole",
+      severity: 90,
+      urgency: "High",
+      durationDays: 2,
+      latitude: 19.0760,
+      longitude: 72.8777,
+      address: "Sector 17 Market",
+      status: "submitted",
+      imageUrl: "",
+      clusters: [],
+      state: "Maharashtra",
+      municipalCorp: "Navi Mumbai",
+      ward: "65"
+    });
 
-    // Create 1 consolidated issue cluster
+    // Create 1 consolidated issue cluster (Ward 64)
     const cluster = await ComplaintCluster.create({
       title: "Potential Water Infrastructure Failure",
       category: "Water Infrastructure",
@@ -77,7 +103,32 @@ async function seed() {
       confidence: 82,
       recommendedAction: "Inspect local pipeline and drainage network.",
       status: "investigating",
-      complaints: savedComplaints.map(c => c._id)
+      complaints: savedComplaints.map(c => c._id),
+      state: "Maharashtra",
+      municipalCorp: "Navi Mumbai",
+      ward: "64"
+    });
+
+    // Create 1 cluster for Ward 65
+    const cluster65 = await ComplaintCluster.create({
+      title: "Severe Road Degradation",
+      category: "Roads",
+      latitude: 19.0760,
+      longitude: 72.8777,
+      priorityScore: 94,
+      severityScore: 90,
+      impactScore: 60,
+      frequencyScore: 40,
+      durationScore: 30,
+      estimatedAffectedPeople: 200,
+      probableRootCause: "Monsoon damage to asphalt",
+      confidence: 90,
+      recommendedAction: "Dispatch patching crew.",
+      status: "investigating",
+      complaints: [otherWardComplaint._id],
+      state: "Maharashtra",
+      municipalCorp: "Navi Mumbai",
+      ward: "65"
     });
 
     // Update complaints to point to cluster
@@ -85,6 +136,8 @@ async function seed() {
       c.clusters.push(cluster._id);
       await c.save();
     }
+    otherWardComplaint.clusters.push(cluster65._id);
+    await otherWardComplaint.save();
 
     console.log('o. Hackathon Demo Data seeded successfully!');
     console.log('o. 6 Citizen Complaints generated.');

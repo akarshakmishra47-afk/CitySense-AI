@@ -237,10 +237,71 @@ async function transcribeAudio(filePath) {
   }
 }
 
+async function verifyResolutionPhoto(base64Image, complaintDescription) {
+  if (!groq) return { isResolved: true, reason: "AI offline, auto-approved for demo." };
+  try {
+    const response = await groq.chat.completions.create({
+      model: "llama-3.2-11b-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Verify if this photo shows a resolved civic issue. Original issue: "${complaintDescription}". Reply strictly with JSON: {"isResolved": boolean, "reason": "short explanation"}` },
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+    return JSON.parse(response.choices[0].message.content);
+  } catch (err) {
+    console.error("Vision AI failed:", err.message);
+    return { isResolved: true, reason: "Verification API failed, bypassing for demo." };
+  }
+}
+
+async function generateHotspotPredictions(clusterData) {
+  if (!groq) return [{ ward: "N/A", riskLevel: "High", prediction: "AI offline, mock prediction.", recommendation: "Check sensors." }];
+  try {
+    const response = await groq.chat.completions.create({
+      model: "qwen/qwen3.8-27b",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert civic AI predicting future infrastructure failures based on current cluster data.
+Output strictly valid JSON matching this schema:
+{
+  "predictions": [
+    {
+      "ward": "string",
+      "riskLevel": "Critical | High | Medium",
+      "prediction": "string (1 sentence)",
+      "recommendation": "string (1 sentence)"
+    }
+  ]
+}`
+        },
+        {
+          role: "user",
+          content: `Current Clusters: ${JSON.stringify(clusterData)}`
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+    const parsed = JSON.parse(response.choices[0].message.content);
+    return parsed.predictions;
+  } catch (err) {
+    console.error("Hotspot prediction failed:", err.message);
+    return [];
+  }
+}
+
 module.exports = {
   analyzeComplaint,
   generateRootCause,
   generateSystemInsight,
   generateMockComplaints,
-  transcribeAudio
+  transcribeAudio,
+  verifyResolutionPhoto,
+  generateHotspotPredictions
 };

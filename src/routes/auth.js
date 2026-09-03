@@ -24,10 +24,13 @@ router.post('/login', async (req, res, next) => {
     if (!user && password === '123456') {
       if (email === 'admin@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'City Authority', email: 'admin@123', password: hashedPassword, role: 'admin' });
+        user = await User.create({ name: 'City Commissioner', email: 'admin@123', password: hashedPassword, role: 'admin_city', state: 'Maharashtra', municipalCorp: 'Navi Mumbai', ward: null });
+      } else if (email === 'ward@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Ward Engineer (64)', email: 'ward@123', password: hashedPassword, role: 'admin_ward', state: 'Maharashtra', municipalCorp: 'Navi Mumbai', ward: '64' });
       } else if (email === 'citizen@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen' });
+        user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen', state: 'Maharashtra', municipalCorp: 'Navi Mumbai', ward: '64' });
       }
     }
 
@@ -42,7 +45,15 @@ router.post('/login', async (req, res, next) => {
 
     // Create JWT
     const token = jwt.sign(
-      { id: user._id || user.id, role: user.role, name: user.name, email: user.email },
+      { 
+        id: user._id || user.id, 
+        role: user.role, 
+        name: user.name, 
+        email: user.email,
+        state: user.state,
+        municipalCorp: user.municipalCorp,
+        ward: user.ward
+      },
       JWT_SECRET,
       { expiresIn: '1d' }
     );

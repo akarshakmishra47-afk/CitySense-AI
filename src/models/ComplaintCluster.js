@@ -64,12 +64,28 @@ const complaintClusterSchema = new mongoose.Schema({
   status: {
     type: String,
     default: 'investigating',
-    enum: ['investigating', 'assigned', 'in_progress', 'resolved']
+    enum: ['investigating', 'assigned', 'in_progress', 'resolved', 'escalated']
+  },
+  verificationPhotoUrl: {
+    type: String,
+    default: null
   },
   complaints: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Complaint'
-  }]
+  }],
+  state: {
+    type: String,
+    default: null
+  },
+  municipalCorp: {
+    type: String,
+    default: null
+  },
+  ward: {
+    type: String,
+    default: null
+  }
 }, {
   timestamps: true
 });

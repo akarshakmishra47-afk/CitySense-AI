@@ -17,7 +17,19 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     default: 'citizen',
-    enum: ['citizen', 'admin']
+    enum: ['citizen', 'admin_ward', 'admin_city', 'admin_state']
+  },
+  state: {
+    type: String,
+    default: null
+  },
+  municipalCorp: {
+    type: String,
+    default: null
+  },
+  ward: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

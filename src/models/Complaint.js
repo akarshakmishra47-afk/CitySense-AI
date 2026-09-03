@@ -53,12 +53,24 @@ const complaintSchema = new mongoose.Schema({
   status: {
     type: String,
     default: 'submitted',
-    enum: ['submitted', 'investigating', 'assigned', 'in_progress', 'resolved']
+    enum: ['submitted', 'investigating', 'assigned', 'in_progress', 'resolved', 'escalated']
   },
   clusters: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ComplaintCluster'
-  }]
+  }],
+  state: {
+    type: String,
+    default: null
+  },
+  municipalCorp: {
+    type: String,
+    default: null
+  },
+  ward: {
+    type: String,
+    default: null
+  }
 }, {
   timestamps: true
 });

@@ -12,6 +12,7 @@ const { calculateCombinedSimilarity } = require('../services/clustering');
 const { calculatePriority } = require('../services/priority-engine');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'citysense_secret_key_123!';
+const authMiddleware = require('../middleware/auth');
 
 // Setup Multer to use memory storage for Vercel serverless compatibility
 const storage = multer.memoryStorage();
@@ -38,28 +39,23 @@ const audioUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
-// Middleware to parse auth token
-const authMiddleware = (req, res, next) => {
-  const token = req.cookies.citysense_token;
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized. Please log in." });
-  }
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid or expired token." });
-  }
-};
-
 // GET /api/complaints
 router.get('/', authMiddleware, async (req, res, next) => {
   try {
-    const query = req.user.role === 'admin' ? {} : { user: req.user.id };
+    let query = {};
+    if (req.user.role === 'citizen') {
+      query.user = req.user.id;
+    } else if (req.user.role === 'admin_ward') {
+      query.ward = req.user.ward;
+    } else if (req.user.role === 'admin_city') {
+      query.municipalCorp = req.user.municipalCorp;
+    } else if (req.user.role === 'admin_state') {
+      query.state = req.user.state;
+    }
+
     const complaints = await Complaint.find(query)
       .sort({ createdAt: -1 })
-      .populate('clusters'); // Replace Prisma include
+      .populate('clusters');
     res.json(complaints);
   } catch (error) {
     next(error);

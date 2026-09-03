@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Complaint = require('../models/Complaint');
 const ComplaintCluster = require('../models/ComplaintCluster');
-const { generateSystemInsight } = require('../services/ai');
+const { generateSystemInsight, generateHotspotPredictions } = require('../services/ai');
+const authMiddleware = require('../middleware/auth');
 
 // GET /api/analytics
 router.get('/', async (req, res, next) => {
@@ -76,6 +77,24 @@ router.get('/', async (req, res, next) => {
       emergingInsight,
       systemStatus
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/analytics/predictions
+router.get('/predictions', authMiddleware, async (req, res, next) => {
+  try {
+    let query = {};
+    if (req.user.role === 'admin_ward') query.ward = req.user.ward;
+    else if (req.user.role === 'admin_city') query.municipalCorp = req.user.municipalCorp;
+    else if (req.user.role === 'admin_state') query.state = req.user.state;
+
+    const clusters = await ComplaintCluster.find(query).limit(10);
+    const clusterData = clusters.map(c => ({ title: c.title, category: c.category, ward: c.ward, severityScore: c.severityScore }));
+    
+    const predictions = await generateHotspotPredictions(clusterData);
+    res.json(predictions);
   } catch (error) {
     next(error);
   }

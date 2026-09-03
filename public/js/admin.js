@@ -47,6 +47,37 @@ async function loadDashboardData() {
       console.error("Failed to load analytics for sidebar", err);
     }
     
+    // Fetch and render Hotspot Predictions (Phase 4)
+    try {
+      const predRes = await fetch('/api/analytics/predictions');
+      if (predRes.ok) {
+        const predictions = await predRes.json();
+        const container = document.getElementById('forecast-container');
+        if (container) {
+          container.innerHTML = '';
+          if (predictions.length === 0) {
+            container.innerHTML = '<p class="text-sm text-tertiary">No critical forecasts at this time.</p>';
+          } else {
+            predictions.forEach(p => {
+              const riskColor = p.riskLevel === 'Critical' ? 'color: var(--critical);' : 'color: var(--primary-brand);';
+              container.innerHTML += `
+                <div class="p-3 mb-2" style="background: var(--bg-surface); border-radius: var(--radius); border: 1px solid var(--border-color);">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-muted uppercase">Ward ${p.ward || 'Unknown'}</span>
+                    <span class="text-xs font-bold" style="${riskColor}">${p.riskLevel} Risk</span>
+                  </div>
+                  <p class="text-sm font-semibold mb-1">${p.prediction}</p>
+                  <p class="text-xs text-tertiary">Action: ${p.recommendation}</p>
+                </div>
+              `;
+            });
+          }
+        }
+      }
+    } catch(err) {
+      console.error("Failed to load predictions", err);
+    }
+    
     // Render priority list
     const list = document.getElementById('priority-list');
     list.innerHTML = '';
