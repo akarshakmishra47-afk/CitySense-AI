@@ -168,7 +168,7 @@ async function seed() {
       latitude: 26.4550,
       longitude: 80.3400,
       priorityScore: 65,
-      status: "submitted",
+      status: "investigating",
       complaints: [],
       state: "Uttar Pradesh",
       municipalCorp: "Kanpur",
