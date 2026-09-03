@@ -22,15 +22,18 @@ router.post('/login', async (req, res, next) => {
     // If the judges use the exact demo credentials but the database wasn't seeded,
     // we create the accounts on the fly so the demo never fails.
     if (!user && password === '123456') {
-      if (email === 'admin@123') {
+      if (email === 'state@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'City Commissioner', email: 'admin@123', password: hashedPassword, role: 'admin_city', state: 'Maharashtra', municipalCorp: 'Navi Mumbai', ward: null });
+        user = await User.create({ name: 'State Chief Admin', email: 'state@123', password: hashedPassword, role: 'admin_state', state: 'Uttar Pradesh', municipalCorp: null, ward: null });
+      } else if (email === 'admin@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Lucknow Commissioner', email: 'admin@123', password: hashedPassword, role: 'admin_city', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: null });
       } else if (email === 'ward@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Ward Engineer (64)', email: 'ward@123', password: hashedPassword, role: 'admin_ward', state: 'Maharashtra', municipalCorp: 'Navi Mumbai', ward: '64' });
+        user = await User.create({ name: 'Ward Engineer (1)', email: 'ward@123', password: hashedPassword, role: 'admin_ward', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
       } else if (email === 'citizen@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen', state: 'Maharashtra', municipalCorp: 'Navi Mumbai', ward: '64' });
+        user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
       }
     }
 

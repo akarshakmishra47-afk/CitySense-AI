@@ -61,6 +61,16 @@
     <div id="error-msg" class="hidden text-sm text-center mb-4 p-2 rounded" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);"></div>
 
     <form id="login-form">
+      <div class="p-4 rounded-lg bg-[#0b1120] border border-[#334155] mb-6">
+        <h3 class="text-sm font-bold text-blue-400 mb-2 uppercase tracking-wider">Hackathon Demo Accounts</h3>
+        <p class="text-xs text-gray-400 mb-3">Use these pre-configured accounts to test the Hierarchical Dashboard. All passwords are <code>123456</code>.</p>
+        <ul class="text-sm space-y-2 text-gray-300">
+          <li class="flex justify-between"><span>State Admin (UP):</span> <code class="text-blue-400">state@123</code></li>
+          <li class="flex justify-between"><span>City Commissioner (Lucknow):</span> <code class="text-blue-400">admin@123</code></li>
+          <li class="flex justify-between"><span>Ward Engineer (Ward 1):</span> <code class="text-blue-400">ward@123</code></li>
+        </ul>
+      </div>
+
       <div class="form-group mb-4">
         <label for="email" class="text-sm uppercase tracking-wider font-bold">Email</label>
         <input type="text" id="email" name="email" placeholder="Enter your Admin ID" required>
@@ -68,11 +78,6 @@
       <div class="form-group mb-6">
         <label for="password" class="text-sm uppercase tracking-wider font-bold">Password</label>
         <input type="password" id="password" name="password" placeholder="••••••••" required>
-      </div>
-      
-      <div class="mb-6 p-3 rounded text-sm text-center" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; vertical-align:text-bottom; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-        Demo Access: Use <strong>admin@123</strong> as username and <strong>123456</strong> as password.
       </div>
 
       <button type="submit" class="btn w-full" style="background-color: #3b82f6; color: white; width: 100%; padding: 1rem; border: none; font-weight: bold; border-radius: 0.5rem; cursor: pointer;">

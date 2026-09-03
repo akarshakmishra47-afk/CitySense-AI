@@ -21,17 +21,17 @@ async function seed() {
         email: "demo@citysense.ai",
         password: "password123",
         role: "citizen",
-        state: "Maharashtra",
-        municipalCorp: "Navi Mumbai",
-        ward: "64"
+        state: "Uttar Pradesh",
+        municipalCorp: "Lucknow",
+        ward: "1"
       });
     }
 
     console.log('Creating Hackathon MVP Demo Data...');
 
-    // Demo Data Definitions
-    const demoLat = 28.6139; // Example coordinates
-    const demoLng = 77.2090;
+    // Demo Data Definitions for Lucknow, UP
+    const demoLat = 26.8467; // Lucknow coordinates
+    const demoLng = 80.9462;
 
     const complaints = [
       "Water flowing onto road",
@@ -60,14 +60,14 @@ async function seed() {
         status: "submitted",
         imageUrl: "",
         clusters: [],
-        state: "Maharashtra",
-        municipalCorp: "Navi Mumbai",
-        ward: "64"
+        state: "Uttar Pradesh",
+        municipalCorp: "Lucknow",
+        ward: "1"
       });
       savedComplaints.push(c);
     }
     
-    // Create 1 complaint for a different ward (Ward 65)
+    // Create 1 complaint for a different ward (Ward 2)
     const otherWardComplaint = await Complaint.create({
       user: demoUser._id,
       description: "Huge pothole causing accidents",
@@ -76,15 +76,15 @@ async function seed() {
       severity: 90,
       urgency: "High",
       durationDays: 2,
-      latitude: 19.0760,
-      longitude: 72.8777,
-      address: "Sector 17 Market",
+      latitude: 26.8500,
+      longitude: 80.9500,
+      address: "Hazratganj Market",
       status: "submitted",
       imageUrl: "",
       clusters: [],
-      state: "Maharashtra",
-      municipalCorp: "Navi Mumbai",
-      ward: "65"
+      state: "Uttar Pradesh",
+      municipalCorp: "Lucknow",
+      ward: "2"
     });
 
     // Create 1 consolidated issue cluster (Ward 64)
@@ -104,17 +104,17 @@ async function seed() {
       recommendedAction: "Inspect local pipeline and drainage network.",
       status: "investigating",
       complaints: savedComplaints.map(c => c._id),
-      state: "Maharashtra",
-      municipalCorp: "Navi Mumbai",
-      ward: "64"
+      state: "Uttar Pradesh",
+      municipalCorp: "Lucknow",
+      ward: "1"
     });
 
-    // Create 1 cluster for Ward 65
+    // Create 1 cluster for Ward 2
     const cluster65 = await ComplaintCluster.create({
       title: "Severe Road Degradation",
       category: "Roads",
-      latitude: 19.0760,
-      longitude: 72.8777,
+      latitude: 26.8500,
+      longitude: 80.9500,
       priorityScore: 94,
       severityScore: 90,
       impactScore: 60,
@@ -126,9 +126,9 @@ async function seed() {
       recommendedAction: "Dispatch patching crew.",
       status: "investigating",
       complaints: [otherWardComplaint._id],
-      state: "Maharashtra",
-      municipalCorp: "Navi Mumbai",
-      ward: "65"
+      state: "Uttar Pradesh",
+      municipalCorp: "Lucknow",
+      ward: "2"
     });
 
     // Update complaints to point to cluster
