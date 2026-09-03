@@ -21,6 +21,9 @@ router.get('/', authMiddleware, async (req, res, next) => {
       query.municipalCorp = req.user.municipalCorp;
     } else if (req.user.role === 'admin_state') {
       query.state = req.user.state;
+      if (req.query.corp) {
+        query.municipalCorp = req.query.corp;
+      }
     }
 
     let clusters = await ComplaintCluster.find(query)
