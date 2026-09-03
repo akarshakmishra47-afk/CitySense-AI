@@ -78,80 +78,160 @@ async function loadDashboardData() {
       console.error("Failed to load predictions", err);
     }
     
-    // Render priority list
-    const list = document.getElementById('priority-list');
-    list.innerHTML = '';
-    
-    clusters.slice(0, 10).forEach(c => {
-      const card = document.createElement('div');
-      card.className = 'card problem-card animate-fade-up';
+    // Fetch auth to determine role
+    const authRes = await fetch('/api/auth/me');
+    const authData = await authRes.json();
+    const role = authData?.user?.role || 'admin_ward';
+
+    if (role === 'admin_state' || role === 'admin_city') {
+      // Hide priority list, show hierarchy
+      document.getElementById('priority-list').style.display = 'none';
+      document.getElementById('hierarchy-list').style.display = 'block';
       
-      const priorityClass = appUtils.getPriorityBadgeClass(c.priorityScore);
-      const priorityLabel = appUtils.getPriorityLabel(c.priorityScore);
-      const colorVar = priorityClass.replace('badge-', '');
+      const titleEl = document.querySelector('h2.text-xl');
+      const subtitleEl = document.querySelector('p.text-tertiary.text-sm');
+      if (titleEl) titleEl.textContent = role === 'admin_state' ? 'Municipal Corporations Overview' : 'Wards Overview';
+      if (subtitleEl) subtitleEl.textContent = 'Aggregated performance and active problem tracking';
+
+      try {
+        const hierarchyRes = await fetch('/api/analytics/hierarchy');
+        const hierarchyData = await hierarchyRes.json();
+        const list = document.getElementById('hierarchy-list');
+        list.innerHTML = '';
+
+        if (hierarchyData.length === 0) {
+           list.innerHTML = '<p class="text-muted">No data available for this jurisdiction.</p>';
+        }
+
+        hierarchyData.forEach(h => {
+           const name = h._id || 'Unknown';
+           const total = h.totalClusters;
+           const active = h.activeClusters;
+           const critical = h.criticalClusters;
+           const progressPercent = total === 0 ? 100 : Math.round(((total - active) / total) * 100);
+
+           const card = document.createElement('div');
+           card.className = 'card animate-fade-up mb-4';
+           card.style.padding = '1.5rem';
+           card.style.borderLeft = critical > 0 ? '4px solid var(--critical)' : '4px solid var(--primary-brand)';
+
+           card.innerHTML = `
+             <div class="flex justify-between items-center mb-4">
+               <h3 class="text-2xl font-bold text-white">${role === 'admin_state' ? name : 'Ward ' + name}</h3>
+               <span class="badge ${critical > 0 ? 'badge-critical' : 'badge-high'}">${critical} Critical Clusters</span>
+             </div>
+             
+             <div class="grid grid-cols-3 gap-4 mb-6">
+               <div>
+                 <div class="text-xs text-secondary font-bold uppercase mb-1">Total Reports</div>
+                 <div class="text-xl font-bold">${h.totalComplaints}</div>
+               </div>
+               <div>
+                 <div class="text-xs text-secondary font-bold uppercase mb-1">Active Clusters</div>
+                 <div class="text-xl font-bold">${active}</div>
+               </div>
+               <div>
+                 <div class="text-xs text-secondary font-bold uppercase mb-1">Citizens Affected</div>
+                 <div class="text-xl font-bold">${h.totalAffected}</div>
+               </div>
+             </div>
+
+             <div class="mb-2">
+               <div class="flex justify-between text-xs font-bold uppercase text-secondary mb-1">
+                 <span>Resolution Progress</span>
+                 <span>${progressPercent}%</span>
+               </div>
+               <div style="width: 100%; height: 8px; background: var(--bg-page); border-radius: 4px; overflow: hidden;">
+                 <div style="width: ${progressPercent}%; height: 100%; background: ${critical > 0 ? 'var(--critical)' : 'var(--primary-brand)'};"></div>
+               </div>
+             </div>
+             
+             <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-color); text-align:right;">
+               <button class="btn btn-secondary text-sm">View Detailed Reports</button>
+             </div>
+           `;
+           list.appendChild(card);
+        });
+      } catch(err) {
+        document.getElementById('hierarchy-list').innerHTML = '<p style="color:var(--critical)">Failed to load hierarchy data</p>';
+      }
+
+    } else {
+      // Render priority list for Ward Engineer
+      const list = document.getElementById('priority-list');
+      list.innerHTML = '';
       
-      card.style.setProperty('--critical', `var(--${colorVar})`); // Override for the left border
-      
-      // Calculate SVG dash offset
-      const circumference = 251.2;
-      const offset = circumference - (c.priorityScore / 100) * circumference;
-      
-      card.innerHTML = `
-        <div>
-          <div class="mb-2 flex items-center gap-2">
-            <span class="badge ${priorityClass}">${priorityLabel}</span>
-            ${c.probableRootCause ? `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2);">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; display: inline-block; vertical-align: text-top;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              AI Analyzed
-            </span>` : ''}
-          </div>
-          <h3 class="text-2xl mb-1">${c.title}</h3>
-          <p class="text-sm text-tertiary mb-6">${c._count.complaints} reports &bull; ${c.estimatedAffectedPeople}+ affected</p>
-          
-          ${c.probableRootCause ? `
-            <div class="ai-insight-panel mb-6">
-              <div class="header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                Probable Underlying Issue
-              </div>
-              <h4 class="text-xl mb-1" style="color:var(--${colorVar});">${c.probableRootCause}</h4>
-              <p class="text-sm font-semibold mb-4" style="color:var(--text-secondary);">${c.rootCauseConfidence}% confidence</p>
-              
-              <div class="text-sm text-muted mb-2 font-bold uppercase tracking-wider">Evidence</div>
-              <ul class="text-sm text-secondary ml-4 mb-4" style="list-style-type:disc;">
-                ${c.evidence.slice(0, 3).map(e => `<li class="mb-1">${e}</li>`).join('')}
-              </ul>
-              
-              <div class="text-sm text-muted mb-1 font-bold uppercase tracking-wider">Recommended Action</div>
-              <p class="text-sm font-medium text-primary-brand mb-4">${c.recommendedAction || 'Investigate further'}</p>
-            </div>
-          ` : ''}
-          
-          <a href="/cluster-detail.html?id=${c.id}" class="btn btn-primary w-full">Investigate Problem</a>
-        </div>
+      clusters.slice(0, 10).forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'card problem-card animate-fade-up';
         
-        <div class="flex justify-center items-start pt-2">
-          <div class="priority-ring-wrapper">
-            <svg width="100" height="100" viewBox="0 0 100 100">
-              <circle class="priority-ring-bg" cx="50" cy="50" r="40"></circle>
-              <circle class="priority-ring-progress" cx="50" cy="50" r="40" style="stroke: var(--${colorVar}); stroke-dashoffset: ${offset};"></circle>
-            </svg>
-            <div class="priority-ring-text">
-              <div class="priority-ring-score" style="color: var(--${colorVar});">${c.priorityScore}</div>
-              <div class="priority-ring-max">/ 100</div>
+        const priorityClass = appUtils.getPriorityBadgeClass(c.priorityScore);
+        const priorityLabel = appUtils.getPriorityLabel(c.priorityScore);
+        const colorVar = priorityClass.replace('badge-', '');
+        
+        card.style.setProperty('--critical', `var(--${colorVar})`); // Override for the left border
+        
+        // Calculate SVG dash offset
+        const circumference = 251.2;
+        const offset = circumference - (c.priorityScore / 100) * circumference;
+        
+        card.innerHTML = `
+          <div>
+            <div class="mb-2 flex items-center gap-2">
+              <span class="badge ${priorityClass}">${priorityLabel}</span>
+              ${c.probableRootCause ? `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; display: inline-block; vertical-align: text-top;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                AI Analyzed
+              </span>` : ''}
+            </div>
+            <h3 class="text-2xl mb-1">${c.title}</h3>
+            <p class="text-sm text-tertiary mb-6">${c._count.complaints} reports &bull; ${c.estimatedAffectedPeople}+ affected</p>
+            
+            ${c.probableRootCause ? `
+              <div class="ai-insight-panel mb-6">
+                <div class="header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Probable Underlying Issue
+                </div>
+                <h4 class="text-xl mb-1" style="color:var(--${colorVar});">${c.probableRootCause}</h4>
+                <p class="text-sm font-semibold mb-4" style="color:var(--text-secondary);">${c.rootCauseConfidence}% confidence</p>
+                
+                <div class="text-sm text-muted mb-2 font-bold uppercase tracking-wider">Evidence</div>
+                <ul class="text-sm text-secondary ml-4 mb-4" style="list-style-type:disc;">
+                  ${c.evidence.slice(0, 3).map(e => `<li class="mb-1">${e}</li>`).join('')}
+                </ul>
+                
+                <div class="text-sm text-muted mb-1 font-bold uppercase tracking-wider">Recommended Action</div>
+                <p class="text-sm font-medium text-primary-brand mb-4">${c.recommendedAction || 'Investigate further'}</p>
+              </div>
+            ` : ''}
+            
+            <a href="/cluster-detail.html?id=${c.id}" class="btn btn-primary w-full">Investigate Problem</a>
+          </div>
+          
+          <div class="flex justify-center items-start pt-2">
+            <div class="priority-ring-wrapper">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle class="priority-ring-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="priority-ring-progress" cx="50" cy="50" r="40" style="stroke: var(--${colorVar}); stroke-dashoffset: ${offset};"></circle>
+              </svg>
+              <div class="priority-ring-text">
+                <div class="priority-ring-score" style="color: var(--${colorVar});">${c.priorityScore}</div>
+                <div class="priority-ring-max">/ 100</div>
+              </div>
             </div>
           </div>
-        </div>
-      `;
-      
-      list.appendChild(card);
-      
-      // Small delay for staggered entrance
-      setTimeout(() => {
-        const circle = card.querySelector('.priority-ring-progress');
-        if(circle) circle.style.strokeDashoffset = offset;
-      }, 100);
-    });
+        `;
+        
+        list.appendChild(card);
+        
+        // Small delay for staggered entrance
+        setTimeout(() => {
+          const circle = card.querySelector('.priority-ring-progress');
+          if(circle) circle.style.strokeDashoffset = offset;
+        }, 100);
+      });
+    }
     
   } catch (error) {
     document.getElementById('priority-list').innerHTML = `<p style="color:var(--critical)">${error.message}</p>`;

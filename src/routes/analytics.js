@@ -100,4 +100,47 @@ router.get('/predictions', authMiddleware, async (req, res, next) => {
   }
 });
 
+// GET /api/analytics/hierarchy
+router.get('/hierarchy', authMiddleware, async (req, res, next) => {
+  try {
+    const role = req.user.role;
+    let query = {};
+    let groupByField = '';
+
+    if (role === 'admin_state') {
+      query.state = req.user.state;
+      groupByField = '$municipalCorp';
+    } else if (role === 'admin_city') {
+      query.municipalCorp = req.user.municipalCorp;
+      groupByField = '$ward';
+    } else {
+      return res.status(403).json({ error: "Hierarchy view not available for this role" });
+    }
+
+    const aggregated = await ComplaintCluster.aggregate([
+      { $match: query },
+      { 
+        $group: {
+          _id: groupByField,
+          totalClusters: { $sum: 1 },
+          activeClusters: {
+            $sum: { $cond: [{ $ne: ["$status", "resolved"] }, 1, 0] }
+          },
+          criticalClusters: {
+            $sum: { $cond: [{ $gte: ["$priorityScore", 90] }, 1, 0] }
+          },
+          avgPriority: { $avg: "$priorityScore" },
+          totalAffected: { $sum: "$estimatedAffectedPeople" },
+          totalComplaints: { $sum: { $size: "$complaints" } }
+        }
+      },
+      { $sort: { criticalClusters: -1, avgPriority: -1 } }
+    ]);
+
+    res.json(aggregated);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
