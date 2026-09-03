@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Audio recording is not supported by this browser.");
+        }
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
@@ -65,7 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
         recordStatus.textContent = '🔴 Recording... (Tap mic again to stop)';
         recordStatus.classList.remove('hidden');
       } catch (err) {
-        alert('Microphone access denied or not available.');
+        console.error("Microphone Error:", err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          alert('Microphone access was denied. Please allow microphone permissions in your browser settings to use this feature.');
+        } else {
+          alert('Microphone access is not available on this device or browser (' + err.message + ').');
+        }
       }
     });
   }
