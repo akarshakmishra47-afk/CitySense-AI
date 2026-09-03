@@ -1,6 +1,74 @@
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('report-form');
   const btnLocation = document.getElementById('btn-location');
+  const btnRecord = document.getElementById('btn-record');
+  const recordStatus = document.getElementById('record-status');
+  const descriptionField = document.getElementById('description');
+  
+  // Voice Recording
+  let mediaRecorder;
+  let audioChunks = [];
+  let isRecording = false;
+
+  if (btnRecord) {
+    btnRecord.addEventListener('click', async () => {
+      if (isRecording) {
+        mediaRecorder.stop();
+        btnRecord.style.backgroundColor = 'var(--primary-brand)';
+        btnRecord.style.animation = 'none';
+        recordStatus.textContent = 'Processing audio...';
+        isRecording = false;
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.webm');
+
+          try {
+            const response = await fetch('/api/complaints/transcribe', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+              const currentText = descriptionField.value.trim();
+              descriptionField.value = currentText ? currentText + ' ' + data.text : data.text;
+              recordStatus.textContent = 'Transcription complete!';
+              setTimeout(() => recordStatus.classList.add('hidden'), 3000);
+            } else {
+              throw new Error(data.error || 'Failed to transcribe');
+            }
+          } catch (err) {
+            recordStatus.textContent = 'Failed to transcribe: ' + err.message;
+            setTimeout(() => recordStatus.classList.add('hidden'), 4000);
+          }
+          
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        btnRecord.style.backgroundColor = 'var(--critical)';
+        btnRecord.style.animation = 'pulse 2s infinite';
+        recordStatus.textContent = '🔴 Recording... (Tap mic again to stop)';
+        recordStatus.classList.remove('hidden');
+      } catch (err) {
+        alert('Microphone access denied or not available.');
+      }
+    });
+  }
   
   // Geolocation
   btnLocation.addEventListener('click', () => {

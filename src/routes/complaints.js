@@ -5,7 +5,9 @@ const ComplaintCluster = require('../models/ComplaintCluster');
 const multer = require('multer');
 const path = require('path');
 const jwt = require('jsonwebtoken');
-const { analyzeComplaint, generateRootCause } = require('../services/ai');
+const { analyzeComplaint, generateRootCause, transcribeAudio } = require('../services/ai');
+const os = require('os');
+const fs = require('fs');
 const { calculateCombinedSimilarity } = require('../services/clustering');
 const { calculatePriority } = require('../services/priority-engine');
 
@@ -24,6 +26,16 @@ const upload = multer({
       cb(new Error('Not an image! Please upload an image.'), false);
     }
   }
+});
+
+const audioUpload = multer({ 
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+    filename: (req, file, cb) => {
+      cb(null, 'audio-' + Date.now() + '.webm');
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
 // Middleware to parse auth token
@@ -103,6 +115,29 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res, next) 
     });
 
   } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/complaints/transcribe
+router.post('/transcribe', authMiddleware, audioUpload.single('audio'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file provided" });
+    }
+    
+    const text = await transcribeAudio(req.file.path);
+    
+    // Cleanup temp file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Failed to delete temp audio file:", err);
+    });
+    
+    res.json({ text });
+  } catch (error) {
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
     next(error);
   }
 });

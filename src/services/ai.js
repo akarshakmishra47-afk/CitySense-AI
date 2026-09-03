@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const Groq = require('groq-sdk');
+const fs = require('fs');
 
 const AiResponseSchema = z.object({
   category: z.string(),
@@ -219,9 +220,27 @@ Output strictly valid JSON matching this schema:
   }
 }
 
+async function transcribeAudio(filePath) {
+  if (!groq) {
+    throw new Error("AI is not configured. Missing API key.");
+  }
+
+  try {
+    const transcription = await groq.audio.transcriptions.create({
+      file: fs.createReadStream(filePath),
+      model: "whisper-large-v3",
+    });
+    return transcription.text;
+  } catch (error) {
+    console.error("Groq transcription failed:", error.message);
+    throw new Error("Failed to transcribe audio.");
+  }
+}
+
 module.exports = {
   analyzeComplaint,
   generateRootCause,
   generateSystemInsight,
-  generateMockComplaints
+  generateMockComplaints,
+  transcribeAudio
 };
