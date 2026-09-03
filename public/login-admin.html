@@ -110,7 +110,7 @@
         
         if (res.ok) {
           // If admin, go to admin dashboard
-          if (data.role === 'admin') {
+          if (data.role.startsWith('admin')) {
             window.location.href = '/admin.html';
           } else {
             errorMsg.textContent = 'Unauthorized: Admin access required.';
