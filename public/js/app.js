@@ -28,7 +28,7 @@ async function checkSession() {
     }
 
     // If authenticated but wrong role
-    if (data.user.role !== 'admin' && (path.includes('admin') || path.includes('cluster') || path.includes('analytics'))) {
+    if (!data.user.role.startsWith('admin') && (path.includes('admin') || path.includes('cluster') || path.includes('analytics'))) {
       window.location.href = '/report.html';
       return null;
     }
@@ -68,7 +68,7 @@ function setupNavigation(session) {
       return;
     }
     
-    if (isForAdmin && role !== 'admin') {
+    if (isForAdmin && !role.startsWith('admin')) {
       link.style.display = 'none';
     }
     if (isForCitizen && role !== 'citizen') {
