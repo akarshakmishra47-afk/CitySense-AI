@@ -139,6 +139,82 @@ async function seed() {
     otherWardComplaint.clusters.push(cluster65._id);
     await otherWardComplaint.save();
 
+    // --- NEW STATE DEMO DATA ---
+    // Kanpur (Poor Performance / Many Pending)
+    await ComplaintCluster.create({
+      title: "Industrial Effluent Overflow",
+      category: "Drainage",
+      latitude: 26.4499,
+      longitude: 80.3319,
+      priorityScore: 88,
+      severityScore: 95,
+      impactScore: 80,
+      frequencyScore: 70,
+      durationScore: 90,
+      estimatedAffectedPeople: 850,
+      probableRootCause: "Blockage in main industrial sewer line",
+      rootCauseConfidence: 85,
+      recommendedAction: "Deploy high-capacity vacuum trucks immediately.",
+      status: "in_progress",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Kanpur",
+      ward: "10"
+    });
+
+    await ComplaintCluster.create({
+      title: "Uncollected Garbage Pileup",
+      category: "Garbage",
+      latitude: 26.4550,
+      longitude: 80.3400,
+      priorityScore: 65,
+      status: "submitted",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Kanpur",
+      ward: "11"
+    });
+
+    // Varanasi (Good Performance / Many Resolved)
+    await ComplaintCluster.create({
+      title: "Ghat Lighting Malfunction",
+      category: "Streetlights",
+      latitude: 25.3176,
+      longitude: 82.9739,
+      priorityScore: 70,
+      status: "resolved",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Varanasi",
+      ward: "5"
+    });
+
+    await ComplaintCluster.create({
+      title: "Potholes on Ring Road",
+      category: "Roads",
+      latitude: 25.3200,
+      longitude: 82.9800,
+      priorityScore: 50,
+      status: "resolved",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Varanasi",
+      ward: "6"
+    });
+    
+    await ComplaintCluster.create({
+      title: "Minor Water Leak",
+      category: "Water",
+      latitude: 25.3150,
+      longitude: 82.9700,
+      priorityScore: 40,
+      status: "in_progress",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Varanasi",
+      ward: "7"
+    });
+
     console.log('o. Hackathon Demo Data seeded successfully!');
     console.log('o. 6 Citizen Complaints generated.');
     console.log('o. 1 Issue Cluster formed with AI analysis.');

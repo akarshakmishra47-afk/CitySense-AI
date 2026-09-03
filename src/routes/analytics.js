@@ -126,6 +126,12 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
           activeClusters: {
             $sum: { $cond: [{ $ne: ["$status", "resolved"] }, 1, 0] }
           },
+          resolvedClusters: {
+            $sum: { $cond: [{ $eq: ["$status", "resolved"] }, 1, 0] }
+          },
+          pendingClusters: {
+            $sum: { $cond: [{ $in: ["$status", ["submitted", "investigating", "assigned", "in_progress", "escalated"]] }, 1, 0] }
+          },
           criticalClusters: {
             $sum: { $cond: [{ $gte: ["$priorityScore", 90] }, 1, 0] }
           },
@@ -140,6 +146,38 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
     res.json(aggregated);
   } catch (error) {
     next(error);
+  }
+});
+
+const { evaluateMunicipalPerformance } = require('../services/ai');
+
+// GET /api/analytics/recommendation/:municipalCorp
+router.get('/recommendation/:municipalCorp', authMiddleware, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin_state') return res.status(403).json({ error: "Unauthorized" });
+    
+    const corp = req.params.municipalCorp;
+    
+    const aggregated = await ComplaintCluster.aggregate([
+      { $match: { municipalCorp: corp, state: req.user.state } },
+      { 
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          resolved: { $sum: { $cond: [{ $eq: ["$status", "resolved"] }, 1, 0] } },
+          pending: { $sum: { $cond: [{ $ne: ["$status", "resolved"] }, 1, 0] } },
+          critical: { $sum: { $cond: [{ $gte: ["$priorityScore", 90] }, 1, 0] } }
+        }
+      }
+    ]);
+    
+    if (aggregated.length === 0) return res.json({ recommendation: "No data available." });
+    
+    const data = aggregated[0];
+    const recommendation = await evaluateMunicipalPerformance(corp, data);
+    res.json({ recommendation });
+  } catch(err) {
+    next(err);
   }
 });
 

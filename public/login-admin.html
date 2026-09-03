@@ -109,8 +109,10 @@
         const data = await res.json();
         
         if (res.ok) {
-          // If admin, go to admin dashboard
-          if (data.role.startsWith('admin')) {
+          // Redirect based on specific role
+          if (data.role === 'admin_state') {
+            window.location.href = '/admin-state.html';
+          } else if (data.role.startsWith('admin')) {
             window.location.href = '/admin.html';
           } else {
             errorMsg.textContent = 'Unauthorized: Admin access required.';

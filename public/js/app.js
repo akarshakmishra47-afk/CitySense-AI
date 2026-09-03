@@ -16,7 +16,7 @@ async function checkSession() {
     
     // If not authenticated and trying to access a protected page
     if (!data.authenticated) {
-      if (path.includes('admin') || path.includes('cluster') || path.includes('analytics')) {
+      if (path.includes('admin') || path.includes('cluster') || path.includes('analytics') || path.includes('admin-state')) {
         window.location.href = '/login-admin.html';
         return null;
       }
@@ -28,9 +28,21 @@ async function checkSession() {
     }
 
     // If authenticated but wrong role
-    if (!data.user.role.startsWith('admin') && (path.includes('admin') || path.includes('cluster') || path.includes('analytics'))) {
+    if (!data.user.role.startsWith('admin') && (path.includes('admin') || path.includes('cluster') || path.includes('analytics') || path.includes('admin-state'))) {
       window.location.href = '/report.html';
       return null;
+    }
+    
+    // If state admin tries to access normal admin page, redirect to state page
+    if (data.user.role === 'admin_state' && path.endsWith('/admin.html')) {
+       window.location.href = '/admin-state.html';
+       return null;
+    }
+    
+    // If city/ward admin tries to access state page, redirect
+    if (data.user.role !== 'admin_state' && path.includes('admin-state')) {
+       window.location.href = '/admin.html';
+       return null;
     }
 
     // Render logout button if logged in

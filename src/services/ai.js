@@ -296,6 +296,30 @@ Output strictly valid JSON matching this schema:
   }
 }
 
+async function evaluateMunicipalPerformance(municipalCorp, data) {
+  if (!groq) return "AI offline. Based on raw metrics, review pending and critical issues closely.";
+  
+  try {
+    const response = await groq.chat.completions.create({
+      model: "qwen/qwen3.8-27b",
+      messages: [
+        {
+          role: "system",
+          content: "You are a Chief Infrastructure Analyst advising the State Government. Analyze the municipal corporation's data and output a strictly 2-sentence performance review and recommendation. Focus on resolution rate and critical problems."
+        },
+        {
+          role: "user",
+          content: `Municipality: ${municipalCorp}\nData: Total Issues: ${data.total}, Resolved: ${data.resolved}, Pending: ${data.pending}, Critical: ${data.critical}`
+        }
+      ]
+    });
+    return response.choices[0].message.content.trim().replace(/"/g, '');
+  } catch(err) {
+    console.error("AI Performance Review failed:", err.message);
+    return "Error generating AI performance review. Please refer to raw metrics.";
+  }
+}
+
 module.exports = {
   analyzeComplaint,
   generateRootCause,
@@ -303,5 +327,6 @@ module.exports = {
   generateMockComplaints,
   transcribeAudio,
   verifyResolutionPhoto,
-  generateHotspotPredictions
+  generateHotspotPredictions,
+  evaluateMunicipalPerformance
 };
