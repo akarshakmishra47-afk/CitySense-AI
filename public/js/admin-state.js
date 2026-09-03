@@ -1,12 +1,22 @@
 let currentCorpData = null;
 let mapInstance = null;
 let hierarchyData = [];
+let activeTier = 'Nagar Nigam';
+let mapMarkers = [];
+let mapCircles = [];
 
 // Hardcoded coordinates for UP Municipal Corporations for Hackathon Demo
 const corpCoords = {
+  // Nagar Nigams
   "Lucknow": [26.8467, 80.9462],
   "Kanpur": [26.4499, 80.3319],
-  "Varanasi": [25.3176, 82.9739]
+  "Varanasi": [25.3176, 82.9739],
+  // Nagar Palika Parishads
+  "Loni": [28.7500, 77.2833],
+  "Modinagar": [28.8333, 77.5833],
+  // Nagar Panchayats
+  "Phalauda": [29.1833, 77.8167],
+  "Kithaur": [28.8667, 77.9333]
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,10 +36,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (tabId === 'map') {
         if (!mapInstance) initMap();
-        else mapInstance.invalidateSize(); // Fix Leaflet render bug when map is hidden
+        else {
+          mapInstance.invalidateSize();
+          renderMapData(document.getElementById('map-tier-select').value);
+        }
       }
     });
   });
+
+  // Setup Tier Selector in Overview
+  document.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active-tier'));
+      e.currentTarget.classList.add('active-tier');
+      
+      activeTier = e.currentTarget.getAttribute('data-tier');
+      renderCorpList();
+      
+      // Clear detail panel
+      document.getElementById('detail-empty').style.display = 'block';
+      document.getElementById('detail-content').style.display = 'none';
+    });
+  });
+  
+  // Setup Map Filter
+  const mapSelect = document.getElementById('map-tier-select');
+  if (mapSelect) {
+    mapSelect.addEventListener('change', (e) => {
+      renderMapData(e.target.value);
+    });
+  }
 
   // Load Data
   await loadHierarchyData();
@@ -39,6 +75,17 @@ async function loadHierarchyData() {
   try {
     const res = await fetch('/api/analytics/hierarchy');
     hierarchyData = await res.json();
+    
+    // Calculate counts for the tier buttons
+    let counts = { 'Nagar Nigam': 0, 'Nagar Palika Parishad': 0, 'Nagar Panchayat': 0 };
+    hierarchyData.forEach(d => {
+      if (d._id && d._id.type) counts[d._id.type]++;
+    });
+    
+    document.getElementById('count-nigam').textContent = counts['Nagar Nigam'];
+    document.getElementById('count-palika').textContent = counts['Nagar Palika Parishad'];
+    document.getElementById('count-panchayat').textContent = counts['Nagar Panchayat'];
+    
     renderCorpList();
   } catch (err) {
     console.error("Failed to load hierarchy data", err);
@@ -47,13 +94,23 @@ async function loadHierarchyData() {
 
 function renderCorpList() {
   const listEl = document.getElementById('corp-list');
+  listEl.innerHTML = ''; // clear
   
-  hierarchyData.forEach(corp => {
+  // Filter by activeTier
+  const filteredData = hierarchyData.filter(d => d._id && d._id.type === activeTier);
+  
+  if (filteredData.length === 0) {
+    listEl.innerHTML = `<p class="text-slate-500 text-sm italic">No data available for ${activeTier}.</p>`;
+    return;
+  }
+  
+  filteredData.forEach(corp => {
+    const name = corp._id.corp;
     const card = document.createElement('div');
     card.className = 'corp-card';
     card.innerHTML = `
       <div class="flex justify-between items-center mb-2">
-        <h3 class="text-xl font-bold text-white">${corp._id}</h3>
+        <h3 class="text-xl font-bold text-white">${name}</h3>
         ${corp.criticalClusters > 0 ? `<span class="badge badge-critical">${corp.criticalClusters} Critical</span>` : ''}
       </div>
       <div class="flex justify-between text-sm text-slate-400">
@@ -76,12 +133,14 @@ function renderCorpList() {
 
 async function openCorpDetails(corp) {
   currentCorpData = corp;
+  const name = corp._id.corp;
   
   document.getElementById('detail-empty').style.display = 'none';
   document.getElementById('detail-content').style.display = 'block';
   
   // Set KPIs
-  document.getElementById('detail-title').textContent = corp._id;
+  document.getElementById('detail-tier').textContent = activeTier;
+  document.getElementById('detail-title').textContent = name;
   document.getElementById('kpi-total').textContent = corp.totalComplaints;
   document.getElementById('kpi-resolved').textContent = corp.resolvedClusters || 0;
   document.getElementById('kpi-pending').textContent = corp.pendingClusters || 0;
@@ -96,10 +155,10 @@ async function openCorpDetails(corp) {
 
   // Fetch specific clusters for this corp
   const feedEl = document.getElementById('problem-feed');
-  feedEl.innerHTML = '<p class="text-slate-400">Loading clusters...</p>';
+  feedEl.innerHTML = '<p class="text-slate-400">Loading active problem clusters...</p>';
   
   try {
-    const res = await fetch(`/api/clusters?corp=${encodeURIComponent(corp._id)}`);
+    const res = await fetch(`/api/clusters?corp=${encodeURIComponent(name)}`);
     const clusters = await res.json();
     
     feedEl.innerHTML = '';
@@ -124,10 +183,10 @@ async function openCorpDetails(corp) {
           <h4 class="text-lg font-bold text-white">${c.title}</h4>
           <span class="badge" style="background: rgba(255,255,255,0.1); color: ${color}; border: 1px solid ${color};">${c.priorityScore} Priority</span>
         </div>
-        <p class="text-sm text-slate-400 mb-2">Status: <strong class="uppercase">${c.status.replace('_', ' ')}</strong> &bull; Reports: ${c._count.complaints}</p>
+        <p class="text-sm text-slate-400 mb-2">Status: <strong class="uppercase">${c.status.replace('_', ' ')}</strong> &bull; Citizen Reports: ${c._count.complaints}</p>
         ${c.probableRootCause ? `
           <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 4px; border-left: 2px solid #8b5cf6;">
-            <div class="text-xs font-bold text-purple-400 uppercase mb-1">AI Root Cause</div>
+            <div class="text-xs font-bold text-purple-400 uppercase mb-1">AI Root Cause Prediction</div>
             <div class="text-sm text-slate-300">${c.probableRootCause}</div>
           </div>
         ` : ''}
@@ -136,24 +195,26 @@ async function openCorpDetails(corp) {
     });
     
   } catch (err) {
-    feedEl.innerHTML = '<p class="text-red-500">Failed to load clusters.</p>';
+    feedEl.innerHTML = '<p class="text-red-500">Failed to load problem clusters.</p>';
   }
 }
 
 // AI Button Logic
 document.getElementById('generate-ai-btn').addEventListener('click', async () => {
   if (!currentCorpData) return;
+  const name = currentCorpData._id.corp;
+  
   const btn = document.getElementById('generate-ai-btn');
   const reviewBox = document.getElementById('ai-review-box');
   const reviewText = document.getElementById('ai-review-text');
   
   btn.disabled = true;
-  btn.innerHTML = 'Analyzing performance...';
+  btn.innerHTML = 'Analyzing performance metrics...';
   reviewBox.style.display = 'block';
   reviewText.textContent = 'Contacting Groq AI...';
   
   try {
-    const res = await fetch(`/api/analytics/recommendation/${currentCorpData._id}`);
+    const res = await fetch(`/api/analytics/recommendation/${encodeURIComponent(name)}`);
     const data = await res.json();
     reviewText.textContent = data.recommendation || "No recommendation available.";
   } catch (err) {
@@ -165,7 +226,8 @@ document.getElementById('generate-ai-btn').addEventListener('click', async () =>
 });
 
 
-// Map Initialization
+// --- MAP LOGIC ---
+
 function initMap() {
   mapInstance = L.map('state-map', { zoomControl: false }).setView([26.8467, 80.9462], 7);
   L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
@@ -176,38 +238,66 @@ function initMap() {
   const tilePane = mapInstance.getPane('tilePane');
   tilePane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)';
   
+  // Initial render for 'All'
+  renderMapData('All');
+}
+
+function renderMapData(filterTier) {
+  if (!mapInstance) return;
+  
+  // Clear existing
+  mapMarkers.forEach(m => mapInstance.removeLayer(m));
+  mapCircles.forEach(c => mapInstance.removeLayer(c));
+  mapMarkers = [];
+  mapCircles = [];
+  
   const bounds = L.latLngBounds();
+  let addedPoints = 0;
   
   hierarchyData.forEach(corp => {
-    const name = corp._id;
-    const coords = corpCoords[name] || [26.8467, 80.9462];
+    if (!corp._id || !corp._id.type || !corp._id.corp) return;
+    const type = corp._id.type;
+    const name = corp._id.corp;
     
-    // Choose color based on pending/critical clusters to represent "area of work"
-    let areaColor = '#3b82f6'; // Good (Blue)
-    if (corp.criticalClusters > 0) areaColor = '#ef4444'; // Bad (Red)
-    else if (corp.pendingClusters > corp.resolvedClusters) areaColor = '#f59e0b'; // Moderate (Orange)
+    if (filterTier !== 'All' && type !== filterTier) return;
     
-    L.circle(coords, {
+    const coords = corpCoords[name] || [26.8467, 80.9462]; // fallback to Lucknow if unknown
+    
+    // Color logic
+    let areaColor = '#3b82f6'; // Good
+    if (corp.criticalClusters > 0) areaColor = '#ef4444'; // Critical
+    else if (corp.pendingClusters > corp.resolvedClusters) areaColor = '#f59e0b'; // Needs attention
+    
+    // Radius logic based on tier
+    let radius = 5000; // default
+    if (type === 'Nagar Nigam') radius = 15000;
+    else if (type === 'Nagar Palika Parishad') radius = 8000;
+    else if (type === 'Nagar Panchayat') radius = 3000;
+    
+    const circle = L.circle(coords, {
       color: areaColor,
       fillColor: areaColor,
       fillOpacity: 0.15,
       weight: 2,
       dashArray: '5, 10',
-      radius: 20000 // 20km area
+      radius: radius
     }).addTo(mapInstance);
     
-    L.circleMarker(coords, {
-      radius: 8,
+    const marker = L.circleMarker(coords, {
+      radius: type === 'Nagar Nigam' ? 8 : (type === 'Nagar Palika Parishad' ? 6 : 4),
       color: '#fff',
       weight: 2,
       fillColor: areaColor,
       fillOpacity: 1
-    }).addTo(mapInstance).bindTooltip(`${name}<br>Pending: ${corp.pendingClusters}`, { permanent: true, direction: 'top', className: 'bg-slate-800 text-white border-slate-700' });
+    }).addTo(mapInstance).bindTooltip(`<b>${name}</b><br><span style="font-size:10px; color:#94a3b8">${type}</span><br>Pending: ${corp.pendingClusters}`, { direction: 'top', className: 'bg-slate-800 text-white border-slate-700' });
     
+    mapCircles.push(circle);
+    mapMarkers.push(marker);
     bounds.extend(coords);
+    addedPoints++;
   });
   
-  if (hierarchyData.length > 0) {
-    mapInstance.fitBounds(bounds, { padding: [50, 50] });
+  if (addedPoints > 0) {
+    mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
   }
 }

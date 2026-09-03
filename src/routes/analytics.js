@@ -121,7 +121,7 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
       { $match: query },
       { 
         $group: {
-          _id: groupByField,
+          _id: role === 'admin_state' ? { type: '$localBodyType', corp: '$municipalCorp' } : groupByField,
           totalClusters: { $sum: 1 },
           activeClusters: {
             $sum: { $cond: [{ $ne: ["$status", "resolved"] }, 1, 0] }

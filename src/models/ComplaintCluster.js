@@ -82,6 +82,11 @@ const complaintClusterSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  localBodyType: {
+    type: String,
+    enum: ['Nagar Nigam', 'Nagar Palika Parishad', 'Nagar Panchayat'],
+    default: 'Nagar Nigam'
+  },
   ward: {
     type: String,
     default: null

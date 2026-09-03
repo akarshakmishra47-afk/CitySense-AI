@@ -106,6 +106,7 @@ async function seed() {
       complaints: savedComplaints.map(c => c._id),
       state: "Uttar Pradesh",
       municipalCorp: "Lucknow",
+      localBodyType: "Nagar Nigam",
       ward: "1"
     });
 
@@ -159,6 +160,7 @@ async function seed() {
       complaints: [],
       state: "Uttar Pradesh",
       municipalCorp: "Kanpur",
+      localBodyType: "Nagar Nigam",
       ward: "10"
     });
 
@@ -172,6 +174,7 @@ async function seed() {
       complaints: [],
       state: "Uttar Pradesh",
       municipalCorp: "Kanpur",
+      localBodyType: "Nagar Nigam",
       ward: "11"
     });
 
@@ -186,6 +189,7 @@ async function seed() {
       complaints: [],
       state: "Uttar Pradesh",
       municipalCorp: "Varanasi",
+      localBodyType: "Nagar Nigam",
       ward: "5"
     });
 
@@ -199,6 +203,7 @@ async function seed() {
       complaints: [],
       state: "Uttar Pradesh",
       municipalCorp: "Varanasi",
+      localBodyType: "Nagar Nigam",
       ward: "6"
     });
     
@@ -212,7 +217,66 @@ async function seed() {
       complaints: [],
       state: "Uttar Pradesh",
       municipalCorp: "Varanasi",
+      localBodyType: "Nagar Nigam",
       ward: "7"
+    });
+
+    // --- Nagar Palika Parishad ---
+    await ComplaintCluster.create({
+      title: "Broken Park Benches",
+      category: "Public Property",
+      latitude: 28.7500,
+      longitude: 77.2833,
+      priorityScore: 45,
+      status: "investigating",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Loni",
+      localBodyType: "Nagar Palika Parishad",
+      ward: "1"
+    });
+    
+    await ComplaintCluster.create({
+      title: "Market Traffic Congestion",
+      category: "Traffic",
+      latitude: 28.8333,
+      longitude: 77.5833,
+      priorityScore: 60,
+      status: "in_progress",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Modinagar",
+      localBodyType: "Nagar Palika Parishad",
+      ward: "2"
+    });
+
+    // --- Nagar Panchayat ---
+    await ComplaintCluster.create({
+      title: "Primary School Roof Leak",
+      category: "Infrastructure",
+      latitude: 29.1833,
+      longitude: 77.8167,
+      priorityScore: 85,
+      status: "assigned",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Phalauda",
+      localBodyType: "Nagar Panchayat",
+      ward: "1"
+    });
+
+    await ComplaintCluster.create({
+      title: "Handpump Malfunction",
+      category: "Water",
+      latitude: 28.8667,
+      longitude: 77.9333,
+      priorityScore: 92,
+      status: "escalated",
+      complaints: [],
+      state: "Uttar Pradesh",
+      municipalCorp: "Kithaur",
+      localBodyType: "Nagar Panchayat",
+      ward: "3"
     });
 
     console.log('o. Hackathon Demo Data seeded successfully!');
