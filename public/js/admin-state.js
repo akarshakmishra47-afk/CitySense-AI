@@ -779,6 +779,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  // Setup Search Bar
+  const searchInput = document.getElementById('corp-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      renderCorpList();
+    });
+  }
+
   // Setup Tier Selector in Overview
   document.querySelectorAll('.tier-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -831,8 +839,15 @@ function renderCorpList() {
   const listEl = document.getElementById('corp-list');
   listEl.innerHTML = ''; // clear
   
-  // Filter by activeTier
-  const filteredData = hierarchyData.filter(d => d._id && d._id.type === activeTier);
+  const searchInput = document.getElementById('corp-search');
+  const searchStr = searchInput ? searchInput.value.toLowerCase() : '';
+  
+  // Filter by activeTier and search string
+  const filteredData = hierarchyData.filter(d => {
+    if (!d._id || d._id.type !== activeTier) return false;
+    if (searchStr && !d._id.corp.toLowerCase().includes(searchStr)) return false;
+    return true;
+  });
   
   if (filteredData.length === 0) {
     listEl.innerHTML = `<p class="text-slate-500 text-sm italic">No data available for ${activeTier}.</p>`;
