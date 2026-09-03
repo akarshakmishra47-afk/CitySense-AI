@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>State Command Center | CitySense AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 0; }
+    .state-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #state-map { height: 100%; width: 100%; }
+    
+    .state-sidebar {
+      background: #1e293b;
+      border-left: 1px solid #334155;
+      padding: 2rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .state-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #334155;
+    }
+    
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .kpi-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    
+    .kpi-box-title { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 0.5rem; }
+    .kpi-box-val { font-size: 2rem; font-weight: bold; color: #f8fafc; }
+    
+    .chart-container {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      height: 250px;
+    }
+    
+    .ai-review-box {
+      background: rgba(37, 99, 235, 0.1);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+    
+    .ai-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 1rem;
+      transition: background 0.2s;
+    }
+    .ai-btn:hover { background: #2563eb; }
+    .ai-btn:disabled { background: #64748b; cursor: not-allowed; }
+    
+    .empty-state { text-align: center; color: #94a3b8; padding-top: 4rem; }
+    
+    /* Top floating nav */
+    .floating-nav {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="admin-theme">
+
+  <div class="floating-nav shadow-lg">
+    <div class="font-bold text-xl text-blue-400">Uttar Pradesh Command Center</div>
+    <div class="text-sm text-gray-400">State Administration</div>
+    <div id="role-switcher"></div>
+  </div>
+
+  <div class="state-layout">
+    <div id="state-map"></div>
+    
+    <div class="state-sidebar" id="sidebar">
+      <div class="empty-state" id="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-4 text-slate-500" style="stroke: #64748b;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <h2 class="text-xl mb-2 text-white">No Municipality Selected</h2>
+        <p class="text-sm">Select a municipal boundary on the map to view progress reports and AI recommendations.</p>
+      </div>
+      
+      <div id="corp-panel" style="display: none;">
+        <div class="state-header">
+          <h2 class="text-3xl font-bold text-white mb-1" id="corp-title">Municipal Corp</h2>
+          <p class="text-sm text-slate-400" style="color: #94a3b8;">Jurisdiction Performance Overview</p>
+        </div>
+        
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <div class="kpi-box-title">Total Reports</div>
+            <div class="kpi-box-val" id="corp-total">--</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-box-title">Critical Issues</div>
+            <div class="kpi-box-val text-red-500" id="corp-critical" style="color: #ef4444;">--</div>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <canvas id="statusChart"></canvas>
+        </div>
+        
+        <button class="ai-btn" id="generate-ai-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Generate AI Performance Review
+        </button>
+        
+        <div class="ai-review-box" id="ai-review-box" style="display:none;">
+          <div class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2" style="color: #60a5fa;">AI Assessment</div>
+          <p class="text-sm leading-relaxed" id="ai-review-text">Generating...</p>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/admin-state.js"></script>
+</body>
+</html>
