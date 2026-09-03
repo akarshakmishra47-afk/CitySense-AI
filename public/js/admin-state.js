@@ -7,13 +7,29 @@ let mapCircles = [];
 
 // Hardcoded coordinates for UP Municipal Corporations for Hackathon Demo
 const corpCoords = {
-  // Nagar Nigams
-  "Lucknow": [26.8467, 80.9462],
+  // 17 Nagar Nigams (Municipal Corporations)
+  "Agra": [27.1767, 78.0081],
+  "Aligarh": [27.8974, 78.0880],
+  "Ayodhya": [26.7922, 82.1998],
+  "Bareilly": [28.3670, 79.4304],
+  "Firozabad": [27.1590, 78.3957],
+  "Ghaziabad": [28.6692, 77.4538],
+  "Gorakhpur": [26.7606, 83.3732],
+  "Jhansi": [25.4484, 78.5685],
   "Kanpur": [26.4499, 80.3319],
+  "Lucknow": [26.8467, 80.9462],
+  "Meerut": [28.9845, 77.7064],
+  "Moradabad": [28.8386, 78.7733],
+  "Prayagraj": [25.4358, 81.8463],
+  "Saharanpur": [29.9640, 77.5460],
+  "Shahjahanpur": [27.8804, 79.9126],
   "Varanasi": [25.3176, 82.9739],
+  "Mathura-Vrindavan": [27.4924, 77.6737],
+  
   // Nagar Palika Parishads
   "Loni": [28.7500, 77.2833],
   "Modinagar": [28.8333, 77.5833],
+  
   // Nagar Panchayats
   "Phalauda": [29.1833, 77.8167],
   "Kithaur": [28.8667, 77.9333]

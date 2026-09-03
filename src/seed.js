@@ -221,6 +221,41 @@ async function seed() {
       ward: "7"
     });
 
+    // Generate mock data for the other 14 Nagar Nigams
+    const otherNigams = [
+      { corp: "Agra", lat: 27.1767, lng: 78.0081 },
+      { corp: "Aligarh", lat: 27.8974, lng: 78.0880 },
+      { corp: "Ayodhya", lat: 26.7922, lng: 82.1998 },
+      { corp: "Bareilly", lat: 28.3670, lng: 79.4304 },
+      { corp: "Firozabad", lat: 27.1590, lng: 78.3957 },
+      { corp: "Ghaziabad", lat: 28.6692, lng: 77.4538 },
+      { corp: "Gorakhpur", lat: 26.7606, lng: 83.3732 },
+      { corp: "Jhansi", lat: 25.4484, lng: 78.5685 },
+      { corp: "Meerut", lat: 28.9845, lng: 77.7064 },
+      { corp: "Moradabad", lat: 28.8386, lng: 78.7733 },
+      { corp: "Prayagraj", lat: 25.4358, lng: 81.8463 },
+      { corp: "Saharanpur", lat: 29.9640, lng: 77.5460 },
+      { corp: "Shahjahanpur", lat: 27.8804, lng: 79.9126 },
+      { corp: "Mathura-Vrindavan", lat: 27.4924, lng: 77.6737 }
+    ];
+
+    for (let i = 0; i < otherNigams.length; i++) {
+      const n = otherNigams[i];
+      await ComplaintCluster.create({
+        title: "Standard Infrastructure Maintenance",
+        category: "Infrastructure",
+        latitude: n.lat,
+        longitude: n.lng,
+        priorityScore: 30 + (i * 2),
+        status: i % 2 === 0 ? "resolved" : "in_progress",
+        complaints: [],
+        state: "Uttar Pradesh",
+        municipalCorp: n.corp,
+        localBodyType: "Nagar Nigam",
+        ward: "1"
+      });
+    }
+
     // --- Nagar Palika Parishad ---
     await ComplaintCluster.create({
       title: "Broken Park Benches",
