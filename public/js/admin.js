@@ -64,15 +64,17 @@ async function loadDashboardData() {
       if (analyticsRes.ok) {
         analyticsData = await analyticsRes.json();
         
-        // Update Insight Text
-        if (analyticsData.emergingInsight) {
-          document.getElementById('system-insight-text').textContent = analyticsData.emergingInsight;
+        // Update Insight Text (Safe check if element exists)
+        const insightEl = document.getElementById('system-insight-text');
+        if (insightEl && analyticsData.emergingInsight) {
+          insightEl.textContent = analyticsData.emergingInsight;
         }
         
         // Find most common category for "Current Focus"
-        if (analyticsData.categoryData && analyticsData.categoryData.length > 0) {
+        const focusEl = document.getElementById('current-focus-text');
+        if (focusEl && analyticsData.categoryData && analyticsData.categoryData.length > 0) {
           const topCategory = analyticsData.categoryData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
-          document.getElementById('current-focus-text').textContent = topCategory.category + " Management";
+          focusEl.textContent = topCategory.category + " Management";
         }
       }
     } catch (err) {
@@ -143,13 +145,11 @@ async function loadDashboardData() {
       document.getElementById('priority-list').style.display = 'none';
       document.getElementById('hierarchy-list').style.display = 'block';
       document.getElementById('advanced-visualizations').style.display = 'block';
-      
-      initVisualizations(analyticsData, allClusters);
-
       // 2. Fetch Hierarchy Data
+      let hierarchyData = [];
       try {
         const hierarchyRes = await fetch(`/api/analytics/hierarchy${querySuffix}`);
-        const hierarchyData = await hierarchyRes.json();
+        hierarchyData = await hierarchyRes.json();
 
         if (isStateView) {
           renderStateView(hierarchyData);
@@ -161,6 +161,18 @@ async function loadDashboardData() {
         console.error(err);
         document.getElementById('hierarchy-grid').innerHTML = '<p style="color:var(--critical)">Failed to load hierarchy data</p>';
       }
+
+      initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData);
+
+    } else if (isLocalBodyView) {
+      // Local Body Dashboard: Show full cluster+complaint details
+      document.getElementById('priority-list').style.display = 'none';
+      document.getElementById('hierarchy-list').style.display = 'block';
+      document.getElementById('urban-rural-split').style.display = 'block';
+      document.getElementById('hierarchy-grid').style.display = 'none';
+      document.getElementById('advanced-visualizations').style.display = 'none'; // LB has its own charts inside urban-rural-split
+      
+      renderLocalBodyView(allClusters, currentCorp, currentDistrict, analyticsData);
 
     } else {
       // Ward/City View: Priority Problems list
@@ -246,6 +258,23 @@ function renderStateView(hierarchyData) {
      card.style.cursor = 'pointer';
      grid.appendChild(card);
   });
+
+  // Attach Search Logic
+  const searchInput = document.getElementById('district-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const cards = grid.querySelectorAll('.card');
+      cards.forEach(card => {
+        const title = card.querySelector('h3').textContent.toLowerCase();
+        if (title.includes(term)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  }
 }
 
 function renderDistrictView(hierarchyData) {
@@ -276,6 +305,9 @@ function renderDistrictView(hierarchyData) {
     return;
   }
 
+  const mapInitQueue = [];
+  const chartInitQueue = [];
+
   hierarchyData.forEach(h => {
      if(!h._id || !h._id.type) return; // Malformed data
      
@@ -283,13 +315,50 @@ function renderDistrictView(hierarchyData) {
      const name = h._id.name || 'Unknown';
      const total = h.totalClusters;
      const resolved = h.resolvedClusters;
+     const pending = h.pendingClusters;
+     const progressPercent = total === 0 ? 0 : Math.round((resolved / total) * 100);
+     
+     const safeNameId = name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+     const mapId = `mini-map-${safeNameId}`;
+     const chartId = `mini-chart-${safeNameId}`;
 
      const cardHTML = `
-       <div class="card p-4 hover:border-blue-500 transition-colors cursor-pointer" onclick="window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'corp=' + encodeURIComponent('${name}')">
-         <h4 class="text-lg font-bold text-white mb-2">${name}</h4>
-         <p class="text-sm text-slate-300">Complaints: <span class="font-bold">${h.totalComplaints}</span></p>
-         <p class="text-sm text-emerald-400">Resolved: <span class="font-bold">${resolved}</span></p>
-         <div class="text-right mt-2"><span class="text-xs font-bold text-blue-400">VIEW →</span></div>
+       <div class="card p-5 hover:border-blue-500 transition-colors cursor-pointer flex flex-col justify-between h-full" style="border: 1px solid var(--border-color); display: flex;" onclick="window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'corp=' + encodeURIComponent('${name}')">
+         
+         <div class="flex justify-between items-start mb-4">
+           <div>
+             <h4 class="text-lg font-bold" style="color: var(--text-primary); margin-bottom: 2px;">${name}</h4>
+             <span class="badge badge-medium">${type}</span>
+           </div>
+           <div class="text-right">
+             <div class="text-2xl font-bold" style="color: var(--text-primary);">${total}</div>
+             <div class="text-xs font-semibold text-tertiary uppercase">Problems</div>
+           </div>
+         </div>
+
+         <div class="mb-4">
+           <div class="flex justify-between text-xs font-bold uppercase mb-1" style="color: var(--text-secondary);">
+             <span>Resolution Progress</span>
+             <span>${progressPercent}%</span>
+           </div>
+           <div style="width: 100%; height: 6px; background: var(--bg-page); border-radius: 4px; overflow: hidden;">
+             <div style="width: ${progressPercent}%; height: 100%; background: var(--success);"></div>
+           </div>
+           <div class="flex justify-between mt-2 text-sm font-semibold">
+             <span style="color: var(--success);">${resolved} Resolved</span>
+             <span style="color: var(--high);">${pending} Pending</span>
+           </div>
+         </div>
+
+         <div class="mb-4" style="height: 60px;">
+           <canvas id="${chartId}"></canvas>
+         </div>
+
+         <div id="${mapId}" style="height: 120px; border-radius: 6px; background: var(--bg-surface); z-index: 0; pointer-events: none;" class="mb-3"></div>
+
+         <div class="text-right mt-auto pt-3" style="border-top: 1px solid var(--border-color);">
+           <span class="text-sm font-bold" style="color: var(--primary-brand);">VIEW DASHBOARD &rarr;</span>
+         </div>
        </div>
      `;
 
@@ -297,11 +366,55 @@ function renderDistrictView(hierarchyData) {
      else if (type === 'Nagar Palika Parishad') { palikaGrid.innerHTML += cardHTML; secPalika.style.display = 'block'; }
      else if (type === 'Nagar Panchayat') { panchayatGrid.innerHTML += cardHTML; secPanchayat.style.display = 'block'; }
      else if (type === 'Development Block') { blocksGrid.innerHTML += cardHTML; secBlocks.style.display = 'block'; }
-     else if (type === 'Gram Panchayat') { blocksGrid.innerHTML += cardHTML; secBlocks.style.display = 'block'; } // Simplify rendering for MVP
+     else if (type === 'Gram Panchayat') { blocksGrid.innerHTML += cardHTML; secBlocks.style.display = 'block'; } 
+
+     // Queue initializations because they must run after DOM insertion
+     mapInitQueue.push(mapId);
+     chartInitQueue.push({ id: chartId, total, resolved, pending });
   });
+
+  // Initialize Maps & Charts after a brief timeout to ensure DOM paints
+  setTimeout(() => {
+    chartInitQueue.forEach(q => {
+      const ctx = document.getElementById(q.id);
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Resolved', 'Pending'],
+            datasets: [{
+              data: [q.resolved, q.pending],
+              backgroundColor: ['#10B981', '#FF9100'],
+              borderRadius: 3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: {
+              x: { display: false },
+              y: { display: false, grid: { display: false } }
+            }
+          }
+        });
+      }
+    });
+
+    mapInitQueue.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.classList.contains('leaflet-container')) {
+        const map = L.map(id, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false }).setView([26.8467, 80.9462], 10);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}').addTo(map);
+        // We will leave the map centered on Lucknow generally for the mini-map to keep it fast, 
+        // unless we have specific coordinates for the local body, which we don't right now.
+      }
+    });
+  }, 100);
 }
 
-function initVisualizations(analyticsData, clusters) {
+function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData) {
   if (!analyticsData) return;
 
   // 1. Problems Over Time (Timeline)
@@ -327,7 +440,7 @@ function initVisualizations(analyticsData, clusters) {
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+          scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }, x: { grid: { display: false }, ticks: { color: '#9ca3af' } } }
         }
       });
     }
@@ -352,7 +465,7 @@ function initVisualizations(analyticsData, clusters) {
             borderWidth: 0
           }]
         },
-        options: { responsive: true, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } } } }
+        options: { responsive: true, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#9ca3af' } } } }
       });
     }
   }
@@ -365,67 +478,413 @@ function initVisualizations(analyticsData, clusters) {
   fetch(`/api/analytics/hierarchy${querySuffix}`).then(r=>r.json()).then(data => {
     const ctxBar = document.getElementById('jurisdiction-bar-chart');
     if (ctxBar && data && data.length > 0) {
-      // Filter out zero-data for cleaner bar chart, or keep them if State View
-      const chartData = data.slice(0, 20); // Top 20 max to avoid crowding
+      // Sort by TOTAL clusters descending so districts with ANY data appear first
+      const sortedData = data.sort((a, b) => b.totalClusters - a.totalClusters);
+      
+      // Take the top 15 most active jurisdictions to avoid crowding the chart
+      const chartData = sortedData.slice(0, 15); 
+      
       new Chart(ctxBar, {
         type: 'bar',
         data: {
           labels: chartData.map(d => typeof d._id === 'object' ? d._id.name : d._id),
-          datasets: [{
-            label: 'Active Clusters',
-            data: chartData.map(d => d.activeClusters),
-            backgroundColor: '#3b82f6',
-            borderRadius: 4
-          }]
+          datasets: [
+            {
+              label: 'Resolved',
+              data: chartData.map(d => d.resolvedClusters),
+              backgroundColor: '#10b981', // Emerald green
+              borderRadius: 4
+            },
+            {
+              label: 'Active',
+              data: chartData.map(d => d.activeClusters),
+              backgroundColor: '#3b82f6', // Blue
+              borderRadius: 4
+            }
+          ]
         },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { grid: { display: false }, ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 } }
+          options: {
+            responsive: true,
+            plugins: { 
+              legend: { 
+                  display: true,
+                  labels: { color: '#9ca3af' }
+              } 
+            },
+            scales: {
+              y: { 
+                  stacked: true, 
+                  beginAtZero: true, 
+                  grid: { color: 'rgba(255,255,255,0.05)' },
+                  ticks: { color: '#9ca3af' }
+              },
+              x: { 
+                  stacked: true, 
+                  grid: { display: false }, 
+                  ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 } 
+              }
+            }
           }
-        }
       });
     }
   });
+
 
   // 4. Leaflet Map
   const mapEl = document.getElementById('dashboard-map');
   if (mapEl && !mapEl.classList.contains('leaflet-container')) {
     const map = L.map('dashboard-map').setView([26.8467, 80.9462], 7); // Center UP
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap',
-      subdomains: 'abcd',
-      maxZoom: 19
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+      maxZoom: 16
     }).addTo(map);
     
-    // Add markers for active clusters
-    const markers = [];
-    clusters.forEach(c => {
-      if (c.latitude && c.longitude) {
-        const color = c.priorityScore >= 90 ? 'red' : (c.priorityScore >= 75 ? 'orange' : 'blue');
-        const circle = L.circleMarker([c.latitude, c.longitude], {
-          radius: 6,
-          fillColor: color,
-          color: '#fff',
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.8
-        }).addTo(map);
-        circle.bindPopup(`<b>${c.title}</b><br>Score: ${c.priorityScore}`);
-        markers.push(circle);
-      }
+    // Fetch GeoJSON and render map logic
+    fetch('/data/up_districts.geojson').then(r => r.json()).then(geoData => {
+       if (urlDistrict) {
+           // District View: filter and show only the specific district
+           const districtFeature = geoData.features.filter(f => f.properties.district_name === urlDistrict);
+           if (districtFeature.length > 0) {
+               const districtLayer = L.geoJSON(districtFeature, {
+                   style: {
+                       color: '#3b82f6',
+                       weight: 2,
+                       fillOpacity: 0.1
+                   }
+               }).addTo(map);
+               map.fitBounds(districtLayer.getBounds().pad(0.1));
+           }
+           
+           // Overlay the specific clusters as dots
+           clusters.forEach(c => {
+              if (c.latitude && c.longitude) {
+                const color = c.priorityScore >= 90 ? '#ef4444' : (c.priorityScore >= 75 ? '#f59e0b' : '#3b82f6');
+                const circle = L.circleMarker([c.latitude, c.longitude], {
+                  radius: 6, fillColor: color, color: '#fff', weight: 1, opacity: 1, fillOpacity: 0.8
+                }).addTo(map);
+                circle.bindPopup(`<b>${c.title}</b><br>Score: ${c.priorityScore}`);
+              }
+           });
+       } else {
+           // State View: Choropleth Map of all districts
+           const geoLayer = L.geoJSON(geoData, {
+               style: function(feature) {
+                   const dName = feature.properties.district_name;
+                   const hInfo = hierarchyData.find(h => h._id === dName);
+                   let fillColor = '#111827'; // default empty
+                   let weight = 1;
+                   let fillOpacity = 0.5;
+                   
+                   if (hInfo && hInfo.totalClusters > 0) {
+                       if (hInfo.criticalClusters > 0) {
+                           fillColor = '#FF3366'; // Red for critical
+                           fillOpacity = 0.7;
+                       } else {
+                           fillColor = '#00E5FF'; // Cyan for normal
+                           fillOpacity = 0.6;
+                       }
+                   }
+                   
+                   return {
+                       fillColor: fillColor,
+                       weight: 1,
+                       opacity: 1,
+                       color: '#374151', // border color
+                       fillOpacity: fillOpacity
+                   };
+               },
+               onEachFeature: function(feature, layer) {
+                   const dName = feature.properties.district_name;
+                   const hInfo = hierarchyData.find(h => h._id === dName);
+                   
+                   let tooltipContent = `<div style="text-align:center;"><b>${dName}</b>`;
+                   if (hInfo && hInfo.totalClusters > 0) {
+                       tooltipContent += `<br/><span style="color:#10b981;">Active: ${hInfo.activeClusters}</span><br/><span style="color:#ef4444;">Critical: ${hInfo.criticalClusters}</span></div>`;
+                   } else {
+                       tooltipContent += `<br/><span style="color:#64748b;">No operational data</span></div>`;
+                   }
+                   layer.bindTooltip(tooltipContent, { className: 'custom-tooltip' });
+                   
+                   layer.on({
+                       mouseover: function(e) {
+                           var layer = e.target;
+                           layer.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.9 });
+                           if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                               layer.bringToFront();
+                           }
+                       },
+                       mouseout: function(e) {
+                           geoLayer.resetStyle(e.target);
+                       },
+                       click: function(e) {
+                           window.location.href = '?district=' + encodeURIComponent(dName);
+                       }
+                   });
+               }
+           }).addTo(map);
+           
+           map.fitBounds(geoLayer.getBounds());
+       }
+    }).catch(err => {
+        console.error("Failed to load geojson", err);
     });
-
-    if (markers.length > 0) {
-      const group = new L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.1));
-    }
   }
 }
 
+function renderLocalBodyView(clusters, corpName, districtName, analyticsData) {
+  // Replace the urban-rural-split container with a full Local Body dashboard
+  const container = document.getElementById('urban-rural-split');
+  container.innerHTML = '';
+
+  const statusColors = {
+    submitted: '#64748b',
+    investigating: '#3b82f6',
+    assigned: '#8b5cf6',
+    in_progress: '#f59e0b',
+    resolved: '#10b981',
+    escalated: '#ef4444'
+  };
+
+  const severityColor = (s) => {
+    if (!s) return '#64748b';
+    if (s >= 85) return '#ef4444';
+    if (s >= 70) return '#f59e0b';
+    if (s >= 50) return '#3b82f6';
+    return '#10b981';
+  };
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+
+  const total = clusters.length;
+  const resolved = clusters.filter(c => c.status === 'resolved').length;
+  const pending = total - resolved;
+  const rate = total === 0 ? 0 : Math.round((resolved / total) * 100);
+
+  // --- Build HTML ---
+  container.innerHTML = `
+    <!-- Local Body KPIs -->
+    <div class="grid grid-cols-4 gap-6 mb-10" style="margin-bottom: 2rem;">
+      <div class="card kpi-card animate-fade-up" style="animation-delay:0.1s;">
+        <div class="kpi-label">Total Problems</div>
+        <div class="kpi-value">${total}</div>
+        <div class="kpi-insight">All reported clusters</div>
+      </div>
+      <div class="card kpi-card animate-fade-up" style="animation-delay:0.2s;">
+        <div class="kpi-label">Resolved</div>
+        <div class="kpi-value" style="color:var(--success);">${resolved}</div>
+        <div class="kpi-insight">Successfully closed</div>
+      </div>
+      <div class="card kpi-card animate-fade-up" style="animation-delay:0.3s;">
+        <div class="kpi-label">Pending</div>
+        <div class="kpi-value" style="color:var(--high);">${pending}</div>
+        <div class="kpi-insight">Awaiting resolution</div>
+      </div>
+      <div class="card kpi-card animate-fade-up" style="animation-delay:0.4s;">
+        <div class="kpi-label">Resolution Rate</div>
+        <div class="kpi-value">${rate}%</div>
+        <div class="kpi-insight">Efficiency score</div>
+      </div>
+    </div>
+
+    <!-- Charts + Map Row -->
+    <div class="grid mb-8" style="grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+      <div class="card p-4">
+        <h3 class="text-lg font-bold mb-4">Status Distribution</h3>
+        <canvas id="lb-status-chart" height="200"></canvas>
+      </div>
+      <div class="card p-4">
+        <h3 class="text-lg font-bold mb-4">Complaint Locations</h3>
+        <div id="lb-map" style="height: 220px; border-radius:6px; background: var(--bg-page);"></div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-3 mb-6 flex-wrap" style="margin-bottom:1.5rem;">
+      <select id="lb-filter-status" style="background:var(--bg-surface);border:1px solid var(--border-color);color:var(--text-primary);padding:0.4rem 0.8rem;border-radius:4px;outline:none;">
+        <option value="">All Statuses</option>
+        <option value="submitted">Submitted</option>
+        <option value="investigating">Investigating</option>
+        <option value="assigned">Assigned</option>
+        <option value="in_progress">In Progress</option>
+        <option value="resolved">Resolved</option>
+        <option value="escalated">Escalated</option>
+      </select>
+      <select id="lb-filter-cat" style="background:var(--bg-surface);border:1px solid var(--border-color);color:var(--text-primary);padding:0.4rem 0.8rem;border-radius:4px;outline:none;">
+        <option value="">All Categories</option>
+      </select>
+      <input id="lb-search" type="text" placeholder="Search problems..." style="background:var(--bg-surface);border:1px solid var(--border-color);color:var(--text-primary);padding:0.4rem 0.8rem;border-radius:4px;outline:none;flex:1;min-width:180px;">
+    </div>
+
+    <!-- Citizen Complaint Cards -->
+    <div class="mb-3" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);">
+      Citizen Problem Reports &amp; Clusters
+    </div>
+    <div id="lb-complaints-container"></div>
+  `;
+
+  // Populate category filter
+  const catFilter = document.getElementById('lb-filter-cat');
+  const cats = [...new Set(clusters.map(c => c.category).filter(Boolean))];
+  cats.forEach(cat => { catFilter.innerHTML += `<option value="${cat}">${cat}</option>`; });
+
+  // Render complaint cards function
+  function renderCards(data) {
+    const cont = document.getElementById('lb-complaints-container');
+    if (!cont) return;
+    if (data.length === 0) {
+      cont.innerHTML = `<div class="card p-8 text-center"><p class="text-tertiary">No problems match your current filters.</p></div>`;
+      return;
+    }
+    cont.innerHTML = data.map(c => {
+      const complaints = c.complaints || [];
+      const statusCol = statusColors[c.status] || '#64748b';
+      const sCol = severityColor(c.priorityScore);
+      const statusLabel = (c.status || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+      const complaintsHTML = complaints.length > 0 ? complaints.map(complaint => `
+        <div style="background: var(--bg-page); border-radius:6px; padding:1rem; margin-top:0.75rem; border-left:3px solid ${severityColor(complaint.severity)};">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);">
+                Complaint #${(complaint.id || complaint._id || '').toString().slice(-6).toUpperCase()}
+              </span>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">${complaint.category || 'General'} ${complaint.subcategory ? `→ ${complaint.subcategory}` : ''}</div>
+            </div>
+            <div class="text-right">
+              ${complaint.severity ? `<div style="font-size:1.2rem;font-weight:800;color:${severityColor(complaint.severity)};">${complaint.severity}</div><div style="font-size:0.65rem;color:var(--text-tertiary);">Severity</div>` : ''}
+            </div>
+          </div>
+          <p style="font-size:0.9rem;color:var(--text-primary);margin-bottom:0.5rem;">"${complaint.description}"</p>
+          <div class="flex flex-wrap gap-3 text-xs" style="color:var(--text-tertiary);">
+            ${complaint.address ? `<span>📍 ${complaint.address}</span>` : ''}
+            ${complaint.ward ? `<span>🏘️ ${complaint.ward}</span>` : ''}
+            ${complaint.urgency ? `<span>⚡ ${complaint.urgency}</span>` : ''}
+            ${complaint.durationDays ? `<span>⏱️ ${complaint.durationDays} days ongoing</span>` : ''}
+            ${complaint.createdAt ? `<span>📅 ${fmtDate(complaint.createdAt)}</span>` : ''}
+          </div>
+          ${complaint.imageUrl ? `
+            <div class="mt-2">
+              <img src="${complaint.imageUrl}" alt="Complaint Photo" style="max-height:120px;border-radius:4px;object-fit:cover;cursor:pointer;" onclick="window.open('${complaint.imageUrl}','_blank')">
+            </div>` : ''}
+          ${complaint.aiSummary ? `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:4px;font-size:0.8rem;color:#93c5fd;">🤖 ${complaint.aiSummary}</div>` : ''}
+        </div>`).join('') : '<div style="font-size:0.85rem;color:var(--text-tertiary);margin-top:0.5rem;">No individual complaint details available.</div>';
+
+      return `
+        <div class="card mb-5" style="padding:1.5rem;border-left:4px solid ${statusCol};margin-bottom:1.25rem;">
+          <!-- Cluster Header -->
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <h3 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">${c.title}</h3>
+              <div class="flex gap-2 flex-wrap" style="gap:0.4rem;">
+                <span class="badge" style="background:${statusCol}22;color:${statusCol};border:1px solid ${statusCol}44;">${statusLabel}</span>
+                ${c.category ? `<span class="badge badge-medium">${c.category}</span>` : ''}
+                ${c.ward ? `<span class="badge" style="background:rgba(139,92,246,0.1);color:#a78bfa;border:1px solid rgba(139,92,246,0.2);">🏘️ ${c.ward}</span>` : ''}
+              </div>
+            </div>
+            <div class="text-right">
+              <div style="font-size:2rem;font-weight:800;color:${sCol};line-height:1;">${c.priorityScore || 0}</div>
+              <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);">Priority Score</div>
+            </div>
+          </div>
+
+          <!-- Cluster Details -->
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div>
+              <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:4px;">Root Cause Analysis</div>
+              <p style="font-size:0.85rem;color:var(--text-secondary);">${c.probableRootCause || 'Under investigation'}</p>
+              ${c.rootCauseConfidence ? `<span style="font-size:0.75rem;color:#60a5fa;">${c.rootCauseConfidence}% confidence</span>` : ''}
+            </div>
+            <div>
+              <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:4px;">Recommended Action</div>
+              <p style="font-size:0.85rem;color:var(--text-secondary);">${c.recommendedAction || 'Pending assessment'}</p>
+            </div>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="flex gap-6 mb-3" style="font-size:0.82rem;color:var(--text-secondary);">
+            <span>👥 <strong>${c.estimatedAffectedPeople || 0}</strong> Affected</span>
+            <span>📋 <strong>${complaints.length}</strong> Report${complaints.length !== 1 ? 's' : ''}</span>
+            ${c.latitude && c.longitude ? `<span>📍 <strong>${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}</strong></span>` : ''}
+            <span>📅 <strong>${fmtDate(c.createdAt)}</strong></span>
+          </div>
+
+          <!-- Collapsible Citizen Reports -->
+          <div>
+            <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';" 
+              style="font-size:0.8rem;font-weight:700;color:var(--primary-brand);background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
+              ▶ View ${complaints.length} Citizen Report${complaints.length !== 1 ? 's' : ''}
+            </button>
+            <div style="display:none;">${complaintsHTML}</div>
+          </div>
+
+          <div class="mt-3 pt-3 flex justify-between" style="border-top:1px solid var(--border-color);">
+            <span style="font-size:0.75rem;color:var(--text-tertiary);">ID: ${(c.id || '').toString().slice(-8).toUpperCase()}</span>
+            <a href="/cluster-detail.html?id=${c.id}" class="btn btn-secondary" style="font-size:0.8rem;padding:0.3rem 0.8rem;">Full Detail →</a>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Filter Logic
+  function applyFilters() {
+    const status = document.getElementById('lb-filter-status').value;
+    const cat = document.getElementById('lb-filter-cat').value;
+    const search = document.getElementById('lb-search').value.toLowerCase();
+    const filtered = clusters.filter(c => {
+      const matchStatus = !status || c.status === status;
+      const matchCat = !cat || c.category === cat;
+      const matchSearch = !search || c.title.toLowerCase().includes(search) || (c.description || '').toLowerCase().includes(search);
+      return matchStatus && matchCat && matchSearch;
+    });
+    renderCards(filtered);
+  }
+
+  ['lb-filter-status', 'lb-filter-cat'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', applyFilters);
+  });
+  document.getElementById('lb-search')?.addEventListener('input', applyFilters);
+
+  renderCards(clusters);
+
+  // Status chart
+  setTimeout(() => {
+    const ctxStatus = document.getElementById('lb-status-chart');
+    if (ctxStatus) {
+      const statusCounts = {};
+      clusters.forEach(c => { statusCounts[c.status] = (statusCounts[c.status] || 0) + 1; });
+      new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(statusCounts).map(s => s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())),
+          datasets: [{ data: Object.values(statusCounts), backgroundColor: Object.keys(statusCounts).map(s => statusColors[s] || '#64748b'), borderWidth: 0 }]
+        },
+        options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: '#9ca3af', padding: 12 } } } }
+      });
+    }
+
+    // Leaflet mini map for local body
+    const mapEl = document.getElementById('lb-map');
+    if (mapEl && !mapEl.classList.contains('leaflet-container')) {
+      const validClusters = clusters.filter(c => c.latitude && c.longitude);
+      const center = validClusters.length > 0 ? [validClusters[0].latitude, validClusters[0].longitude] : [26.8467, 80.9462];
+      const map = L.map('lb-map', { zoomControl: true, attributionControl: false }).setView(center, 13);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}').addTo(map);
+      validClusters.forEach(c => {
+        const col = c.priorityScore >= 85 ? '#ef4444' : c.priorityScore >= 70 ? '#f59e0b' : '#3b82f6';
+        L.circleMarker([c.latitude, c.longitude], { radius: 8, fillColor: col, color: '#fff', weight: 1.5, fillOpacity: 0.9 })
+          .bindPopup(`<b>${c.title}</b><br>Score: ${c.priorityScore}<br>Status: ${c.status}`)
+          .addTo(map);
+      });
+      if (validClusters.length > 1) {
+        const bounds = L.latLngBounds(validClusters.map(c => [c.latitude, c.longitude]));
+        map.fitBounds(bounds.pad(0.2));
+      }
+    }
+  }, 100);
+}
+
 function renderPriorityProblems(clusters) {
+
   const list = document.getElementById('priority-list');
   list.innerHTML = '';
   document.getElementById('hierarchy-list').style.display = 'none';

@@ -44,34 +44,39 @@
 }
 
 .admin-theme {
-  /* Admin / Dark Theme Colors */
-  --bg-page: #0b1120;
-  --bg-surface: #1e293b;
-  --bg-surface-hover: #334155;
-  --border-color: #334155;
+  /* Tactical Command Theme */
+  --bg-page: #0B0F19;
+  --bg-surface: #111827;
+  --bg-surface-hover: #1F2937;
+  --border-color: #374151;
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
   
-  --primary-brand: #3b82f6;
-  --primary-brand-hover: #60a5fa;
-  --primary-brand-light: rgba(59, 130, 246, 0.1);
+  --primary-brand: #00E5FF;
+  --primary-brand-hover: #33EBFF;
+  --primary-brand-light: rgba(0, 229, 255, 0.15);
 
-  --critical-light: rgba(239, 68, 68, 0.1);
-  --critical-border: rgba(239, 68, 68, 0.2);
+  --critical: #FF3366;
+  --critical-light: rgba(255, 51, 102, 0.15);
+  --critical-border: rgba(255, 51, 102, 0.3);
   
-  --high-light: rgba(249, 115, 22, 0.1);
-  --high-border: rgba(249, 115, 22, 0.2);
+  --high: #FF9100;
+  --high-light: rgba(255, 145, 0, 0.15);
+  --high-border: rgba(255, 145, 0, 0.3);
   
-  --medium-light: rgba(234, 179, 8, 0.1);
-  --medium-border: rgba(234, 179, 8, 0.2);
+  --medium: #FBBF24;
+  --medium-light: rgba(251, 191, 36, 0.15);
+  --medium-border: rgba(251, 191, 36, 0.3);
   
-  --low-light: rgba(59, 130, 246, 0.1);
-  --low-border: rgba(59, 130, 246, 0.2);
+  --low: #00E5FF;
+  --low-light: rgba(0, 229, 255, 0.15);
+  --low-border: rgba(0, 229, 255, 0.3);
   
-  --success-light: rgba(16, 185, 129, 0.1);
-  --success-border: rgba(16, 185, 129, 0.2);
+  --success: #10B981;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --success-border: rgba(16, 185, 129, 0.3);
 }
 
 * {
