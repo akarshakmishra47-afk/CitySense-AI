@@ -74,6 +74,14 @@ function setupNavigation(session) {
     if (isForCitizen && role !== 'citizen') {
       link.style.display = 'none';
     }
+    
+    // Hide redundant links for State Admin since they are unified in the Command Center dashboard
+    if (role === 'admin_state') {
+      const href = link.getAttribute('href');
+      if (href === '/admin-map.html' || href === '/clusters.html' || href === '/analytics.html') {
+        link.style.display = 'none';
+      }
+    }
   });
 }
 
