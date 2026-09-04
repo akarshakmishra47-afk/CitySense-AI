@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "manage-geojson": "node scripts/manage_geojson.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
