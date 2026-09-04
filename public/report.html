@@ -125,16 +125,92 @@
         
         <div class="form-group mb-6">
           <label class="text-sm font-bold uppercase tracking-wider text-muted mb-2 block">Where is it?</label>
-          <div class="flex gap-3">
+          <div class="flex gap-3 mb-4">
             <input type="text" id="address" name="address" placeholder="Enter street address or intersection">
             <button type="button" class="btn btn-secondary flex-shrink-0" id="btn-location" style="white-space: nowrap;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2 inline"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
               Auto-Locate
             </button>
           </div>
-          <p id="location-status" class="text-sm text-primary-brand mt-2 font-semibold"></p>
+          <p id="location-status" class="text-sm text-primary-brand mb-4 font-semibold"></p>
           <input type="hidden" id="latitude" name="latitude">
           <input type="hidden" id="longitude" name="longitude">
+
+          <!-- UP Jurisdiction Section -->
+          <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: var(--radius-md, 8px); padding: 1.25rem;">
+            <!-- District -->
+            <div class="mb-4">
+              <label for="district-select" class="text-xs font-bold uppercase tracking-wider text-muted mb-1 block">
+                District <span style="color: var(--critical, #ef4444);">*</span>
+              </label>
+              <select id="district-select" name="district" required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border-color, #cbd5e1); border-radius: var(--radius-sm, 6px); background: white; font-size: 0.95rem; color: var(--text-primary);">
+                <option value="">[ Select District ▼ ]</option>
+              </select>
+            </div>
+
+            <!-- Local Body Type -->
+            <div class="mb-4">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted mb-1 block">
+                Local Body Type <span style="color: var(--critical, #ef4444);">*</span>
+              </label>
+              <div id="body-type-container" style="display: grid; grid-template-columns: 1fr; gap: 0.5rem;">
+                <!-- Municipal Corporation -->
+                <label id="lbl-type-corp" class="body-type-option disabled" style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.9rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: var(--radius-sm, 6px); background: #f1f5f9; cursor: not-allowed; transition: all 0.15s ease;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" name="localBodyTypeRadio" id="type-corp" value="municipalCorporations" disabled style="cursor: inherit;">
+                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Municipal Corporation</span>
+                  </div>
+                  <span id="badge-corp" class="body-type-badge" style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #e2e8f0; color: #64748b;">Not Available</span>
+                </label>
+
+                <!-- Municipal Council -->
+                <label id="lbl-type-council" class="body-type-option disabled" style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.9rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: var(--radius-sm, 6px); background: #f1f5f9; cursor: not-allowed; transition: all 0.15s ease;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" name="localBodyTypeRadio" id="type-council" value="municipalCouncils" disabled style="cursor: inherit;">
+                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Municipal Council</span>
+                  </div>
+                  <span id="badge-council" class="body-type-badge" style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #e2e8f0; color: #64748b;">Not Available</span>
+                </label>
+
+                <!-- Town Council -->
+                <label id="lbl-type-town" class="body-type-option disabled" style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.9rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: var(--radius-sm, 6px); background: #f1f5f9; cursor: not-allowed; transition: all 0.15s ease;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" name="localBodyTypeRadio" id="type-town" value="townCouncils" disabled style="cursor: inherit;">
+                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Town Council</span>
+                  </div>
+                  <span id="badge-town" class="body-type-badge" style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px; background: #e2e8f0; color: #64748b;">Not Available</span>
+                </label>
+              </div>
+              <input type="hidden" id="selected-body-type" name="bodyType">
+            </div>
+
+            <!-- Local Body -->
+            <div class="mb-2">
+              <label for="local-body-select" class="text-xs font-bold uppercase tracking-wider text-muted mb-1 block">
+                Local Body <span style="color: var(--critical, #ef4444);">*</span>
+              </label>
+              <select id="local-body-select" name="bodyName" disabled required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border-color, #cbd5e1); border-radius: var(--radius-sm, 6px); background: #f1f5f9; font-size: 0.95rem; color: var(--text-primary);">
+                <option value="">[ Select district and body type first ]</option>
+              </select>
+            </div>
+
+            <!-- Live Confirmation Card -->
+            <div id="routing-confirmation-card" class="hidden" style="margin-top: 1rem; padding: 1rem; border-radius: var(--radius-sm, 6px); background: #f0fdf4; border: 1px solid #86efac;">
+              <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #15803d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                COMPLAINT ROUTING
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                <div><span style="color: #4b5563; font-size: 0.7rem; display: block; text-transform: uppercase;">District:</span> <strong id="confirm-district" style="color: #111827;">-</strong></div>
+                <div><span style="color: #4b5563; font-size: 0.7rem; display: block; text-transform: uppercase;">Local Body Type:</span> <strong id="confirm-body-type" style="color: #111827;">-</strong></div>
+              </div>
+              <div style="border-top: 1px solid #bbf7d0; padding-top: 0.4rem; font-size: 0.85rem; color: #166534;">
+                ✓ Your complaint will be submitted to: <strong id="confirm-body-name" style="color: #14532d;">-</strong>
+              </div>
+            </div>
+
+            <div id="jurisdiction-error" class="hidden" style="margin-top: 0.75rem; font-size: 0.85rem; color: #b91c1c; background: #fef2f2; padding: 0.5rem 0.75rem; border-radius: 4px; border: 1px solid #fca5a5;"></div>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-6 mb-8">
@@ -198,6 +274,7 @@
   </div>
 
   <script src="/js/app.js"></script>
+  <script src="/js/up-jurisdiction.js"></script>
   <script src="/js/report.js"></script>
 </body>
 </html>
