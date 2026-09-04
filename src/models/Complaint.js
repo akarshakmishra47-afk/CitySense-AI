@@ -87,6 +87,23 @@ const complaintSchema = new mongoose.Schema({
   gramPanchayat: {
     type: String,
     default: null
+  },
+  localBodyId: {
+    type: String,
+    default: null,
+    index: true
+  },
+  localBodyName: {
+    type: String,
+    default: null
+  },
+  bodyType: {
+    type: String,
+    default: null
+  },
+  bodyName: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

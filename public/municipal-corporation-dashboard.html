@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Municipal Corporation Command Center | CitySense AI</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/municipal-corporation-dashboard.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="admin-theme municipal-corp-theme">
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <h2 class="text-xl font-bold mb-2">Authenticating</h2>
+    <p class="text-tertiary">Connecting to Municipal Corporation Command Center...</p>
+  </div>
+
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CitySense AI
+      </a>
+      <nav>
+        <a href="#" class="active">Dashboard</a>
+        <a href="#complaints">Complaints</a>
+        <a href="#map-section">Map</a>
+        <a href="#analytics-section">Analytics</a>
+      </nav>
+      <div class="role-switcher" id="logout-btn">Logout</div>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top: 3rem;">
+    <div class="dashboard-header" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; margin-bottom: 3rem;">
+      <div class="text-xs font-bold text-tertiary uppercase tracking-wider" style="color: var(--primary-brand);">
+        <span id="header-district">...</span> &gt; Municipal Corporation
+      </div>
+      <div>
+        <h2 class="text-3xl mb-1 font-bold tracking-wide" style="color: var(--text-primary);">
+          <span id="header-corp-name">Loading...</span> Command Center
+        </h2>
+        <p class="text-sm text-tertiary" id="admin-name">Welcome, Admin</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="card hidden mb-8" style="border-color: var(--critical-border); background: var(--critical-light);">
+      <h3 class="text-lg font-bold" style="color: var(--critical);">Access Denied / Error</h3>
+      <p id="error-message" class="text-sm mt-2" style="color: var(--text-secondary);">Unable to load dashboard.</p>
+      <button id="retry-btn" class="btn btn-primary mt-4">Retry</button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="card hidden mb-8 text-center py-12">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" class="mx-auto mb-4" style="margin: 0 auto 1rem auto;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <h3 class="text-xl font-bold mb-2">No Complaints Found</h3>
+      <p class="text-tertiary">There are currently no complaints routed to this Municipal Corporation.</p>
+    </div>
+
+    <div id="dashboard-content" class="hidden">
+      <!-- KPIs -->
+      <div class="grid grid-cols-5 gap-4 mb-8">
+        <div class="card kpi-card">
+          <div class="kpi-label">Total</div>
+          <div id="kpi-total" class="kpi-value">0</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">New</div>
+          <div id="kpi-new" class="kpi-value">0</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">In Progress</div>
+          <div id="kpi-progress" class="kpi-value">0</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Resolved</div>
+          <div id="kpi-resolved" class="kpi-value" style="color: var(--success);">0</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">High Priority</div>
+          <div id="kpi-high" class="kpi-value" style="color: var(--critical);">0</div>
+        </div>
+      </div>
+
+      <!-- Analytics Charts -->
+      <div id="analytics-section" class="grid grid-cols-3 gap-6 mb-8">
+        <div class="card p-4 col-span-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-muted mb-4">Complaints Trend (30 Days)</h3>
+          <canvas id="trend-chart" height="100"></canvas>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-muted mb-4">Status Distribution</h3>
+          <canvas id="status-chart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Main Complaint Table -->
+      <div id="complaints" class="card mb-8 p-0 overflow-hidden">
+        <div class="p-4 border-b border-color flex justify-between items-center" style="border-bottom: 1px solid var(--border-color);">
+          <h3 class="text-lg font-bold">Recent Complaints</h3>
+          <div class="flex gap-2">
+            <select id="filter-status" class="filter-select">
+              <option value="">All Statuses</option>
+              <option value="submitted">New</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+            <input type="text" id="search-input" placeholder="Search complaints..." class="search-input">
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="w-full text-left border-collapse" style="width: 100%;">
+            <thead>
+              <tr style="background: var(--bg-surface-hover); border-bottom: 1px solid var(--border-color);">
+                <th class="p-3 text-xs uppercase tracking-wider text-muted">ID & Photo</th>
+                <th class="p-3 text-xs uppercase tracking-wider text-muted">Problem</th>
+                <th class="p-3 text-xs uppercase tracking-wider text-muted">Citizen</th>
+                <th class="p-3 text-xs uppercase tracking-wider text-muted">Priority</th>
+                <th class="p-3 text-xs uppercase tracking-wider text-muted">Status</th>
+                <th class="p-3 text-xs uppercase tracking-wider text-muted text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="complaints-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Map Section -->
+      <div id="map-section" class="card p-4 mb-12" style="height: 500px;">
+        <h3 class="text-lg font-bold mb-4">Complaint Locations</h3>
+        <div id="map" style="width: 100%; height: 400px; border-radius: 8px; background: var(--bg-surface);"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Complaint Detail Modal -->
+  <div id="detail-modal" class="modal-overlay hidden">
+    <div class="modal-content card">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <div class="text-xs font-bold text-muted uppercase tracking-wider mb-1">Complaint Details</div>
+          <h2 id="modal-title" class="text-2xl font-bold">...</h2>
+        </div>
+        <button id="close-modal" class="btn btn-secondary" style="padding: 0.25rem 0.5rem;">&times;</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <div class="mb-4">
+            <label class="text-xs text-muted uppercase tracking-wider">Description</label>
+            <p id="modal-desc" class="text-sm mt-1">...</p>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="text-xs text-muted uppercase tracking-wider">Category</label>
+              <div id="modal-category" class="font-semibold text-sm">...</div>
+            </div>
+            <div>
+              <label class="text-xs text-muted uppercase tracking-wider">Date/Time</label>
+              <div id="modal-date" class="font-semibold text-sm">...</div>
+            </div>
+          </div>
+
+          <div class="mb-4 p-3 rounded" style="background: var(--bg-surface-hover); border: 1px solid var(--border-color);">
+            <label class="text-xs text-muted uppercase tracking-wider mb-2 block">Update Status</label>
+            <div class="flex gap-2">
+              <select id="modal-status-select" style="flex: 1;">
+                <option value="submitted">Submitted (New)</option>
+                <option value="investigating">Investigating</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+              <button id="btn-update-status" class="btn btn-primary">Update</button>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="text-xs text-muted uppercase tracking-wider">Citizen Info</label>
+            <div id="modal-citizen" class="text-sm mt-1">...</div>
+          </div>
+
+          <div>
+            <label class="text-xs text-muted uppercase tracking-wider">Location</label>
+            <div id="modal-location" class="text-sm mt-1">...</div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="text-xs text-muted uppercase tracking-wider mb-2 block">Attached Photo</label>
+          <div id="modal-photo-container" class="rounded overflow-hidden bg-black flex items-center justify-center" style="height: 300px; border: 1px solid var(--border-color);">
+            <img id="modal-photo" src="" alt="Complaint Photo" style="max-width: 100%; max-height: 100%; object-fit: contain;" class="hidden">
+            <div id="modal-no-photo" class="text-tertiary text-sm">No photo available</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
+      width: 100%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .filter-select, .search-input {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 0.4rem 0.8rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+    }
+    .thumbnail-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+    }
+    .thumbnail-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      background: var(--bg-surface-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      border: 1px dashed var(--border-color);
+    }
+  </style>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/municipal-corporation-dashboard.js"></script>
+</body>
+</html>

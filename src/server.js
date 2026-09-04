@@ -32,6 +32,9 @@ app.use('/api/clusters', clustersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cron', cronRoutes);
+
+const localBodyDashboardRoutes = require('./routes/local-body-dashboard');
+app.use('/api/local-body', localBodyDashboardRoutes);
 // Fallback to index.html for unmatched routes (if using HTML5 history API, though we use distinct HTML files here)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));

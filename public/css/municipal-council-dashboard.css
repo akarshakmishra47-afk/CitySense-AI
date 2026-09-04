@@ -1,0 +1,67 @@
+/* Municipal Council Dashboard Theme */
+
+.municipal-council-theme {
+  --bg-page: #0B0F19;
+  --bg-surface: #111827;
+  --bg-surface-hover: #1F2937;
+  --border-color: #374151;
+  
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+  
+  /* Accent Color: Emerald Green */
+  --primary-brand: #10B981;
+  --primary-brand-hover: #34D399;
+  --primary-brand-light: rgba(16, 185, 129, 0.15);
+
+  --critical: #FF3366;
+  --critical-light: rgba(255, 51, 102, 0.15);
+  --critical-border: rgba(255, 51, 102, 0.3);
+  
+  --high: #FF9100;
+  --high-light: rgba(255, 145, 0, 0.15);
+  --high-border: rgba(255, 145, 0, 0.3);
+  
+  --medium: #FBBF24;
+  --medium-light: rgba(251, 191, 36, 0.15);
+  --medium-border: rgba(251, 191, 36, 0.3);
+  
+  --low: #10B981;
+  --low-light: rgba(16, 185, 129, 0.15);
+  --low-border: rgba(16, 185, 129, 0.3);
+  
+  --success: #10B981;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --success-border: rgba(16, 185, 129, 0.3);
+}
+
+.municipal-council-theme .kpi-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.municipal-council-theme .kpi-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.municipal-council-theme .kpi-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.municipal-council-theme td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}

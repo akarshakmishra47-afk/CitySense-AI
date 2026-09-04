@@ -37,6 +37,15 @@ router.post('/login', async (req, res, next) => {
       } else if (email === 'citizen@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
         user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
+      } else if (email === 'corp@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Municipal Corp Admin', email: 'corp@123', password: hashedPassword, role: 'admin_municipal_corp', state: 'Uttar Pradesh', district: 'Kanpur Nagar', localBodyId: 'UP_KANPUR_NAGAR_KANPUR_MUNICIPAL_CORPORATION', localBodyName: 'Kanpur Municipal Corporation' });
+      } else if (email === 'council@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Municipal Council Admin', email: 'council@123', password: hashedPassword, role: 'admin_municipal_council', state: 'Uttar Pradesh', district: 'Hardoi', localBodyId: 'UP_HARDOI_HARDOI_MUNICIPAL_COUNCIL', localBodyName: 'Hardoi Municipal Council' });
+      } else if (email === 'town@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Town Council Admin', email: 'town@123', password: hashedPassword, role: 'admin_town_council', state: 'Uttar Pradesh', district: 'Hardoi', localBodyId: 'UP_HARDOI_SANDILA_TOWN_COUNCIL', localBodyName: 'Sandila Town Council' });
       }
     }
 
@@ -59,7 +68,9 @@ router.post('/login', async (req, res, next) => {
         state: user.state,
         district: user.district,
         municipalCorp: user.municipalCorp,
-        ward: user.ward
+        ward: user.ward,
+        localBodyId: user.localBodyId,
+        localBodyName: user.localBodyName
       },
       JWT_SECRET,
       { expiresIn: '1d' }

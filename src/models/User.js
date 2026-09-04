@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     default: 'citizen',
-    enum: ['citizen', 'admin_ward', 'admin_city', 'admin_district', 'admin_state']
+    enum: ['citizen', 'admin_ward', 'admin_city', 'admin_district', 'admin_state', 'admin_municipal_corp', 'admin_municipal_council', 'admin_town_council']
   },
   state: {
     type: String,
@@ -32,6 +32,14 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   ward: {
+    type: String,
+    default: null
+  },
+  localBodyId: {
+    type: String,
+    default: null
+  },
+  localBodyName: {
     type: String,
     default: null
   }

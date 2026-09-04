@@ -27,7 +27,15 @@ async function processNewComplaint(complaintData, userId, imageUrl = null) {
     longitude: lng,
     address,
     imageUrl,
-    aiSummary: analysis.summary
+    aiSummary: analysis.summary,
+    // Jurisdiction routing fields from Citizen Portal
+    district: complaintData.district || null,
+    localBodyId: complaintData.localBodyId || null,
+    localBodyName: complaintData.localBodyName || complaintData.bodyName || null,
+    bodyType: complaintData.bodyType || null,
+    bodyName: complaintData.bodyName || null,
+    localBodyType: complaintData.localBodyType || null,
+    municipalCorp: complaintData.municipalCorp || null
   });
 
   // 3. Find Matching Cluster
