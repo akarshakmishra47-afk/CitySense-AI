@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Command Center | CitySense AI</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Admin Specific Overrides */
     .dashboard-header {
@@ -158,10 +162,13 @@
   </header>
 
   <main class="container" style="margin-top: 3rem;">
-    <div class="dashboard-header">
+    <div class="dashboard-header" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+      <div id="breadcrumb-nav" class="text-xs font-bold text-tertiary uppercase tracking-wider" style="color: #64748b;">
+        <!-- Breadcrumbs injected by JS -->
+      </div>
       <div>
-        <h2 class="text-3xl mb-1 text-gradient font-bold tracking-wide">Command Center</h2>
-        <p class="text-sm text-tertiary">Real-time intelligence and resource allocation dashboard</p>
+        <h2 class="text-3xl mb-1 text-gradient font-bold tracking-wide" id="main-dashboard-title">Command Center</h2>
+        <p class="text-sm text-tertiary" id="main-dashboard-subtitle">Real-time intelligence and resource allocation dashboard</p>
       </div>
     </div>
 
@@ -183,9 +190,35 @@
         <div class="kpi-insight">Requires attention</div>
       </div>
       <div class="card kpi-card animate-fade-up" style="animation-delay: 0.4s;">
-        <div class="kpi-label">Citizens Affected</div>
-        <div id="stat-affected" class="kpi-value">--</div>
-        <div class="kpi-insight">Across active clusters</div>
+        <div class="kpi-label">Resolution Rate</div>
+        <div id="stat-resolution" class="kpi-value">--</div>
+        <div class="kpi-insight">Overall efficiency</div>
+      </div>
+    </div>
+
+    <!-- Advanced Visualizations (State/District Only) -->
+    <div id="advanced-visualizations" style="display: none; margin-bottom: 3rem;">
+      <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div class="card p-4">
+          <h3 class="text-lg font-bold mb-4">Problems Over Time</h3>
+          <canvas id="timeline-chart" height="100"></canvas>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-lg font-bold mb-4">Severity Distribution</h3>
+          <canvas id="severity-chart" height="200"></canvas>
+        </div>
+      </div>
+      
+      <div class="grid" style="grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div class="card p-4">
+          <h3 class="text-lg font-bold mb-4">Complaints by Jurisdiction</h3>
+          <canvas id="jurisdiction-bar-chart" height="80"></canvas>
+        </div>
+      </div>
+
+      <div class="card p-4" style="height: 500px;">
+        <h3 class="text-lg font-bold mb-4">Command Center Map</h3>
+        <div id="dashboard-map" style="width: 100%; height: 400px; border-radius: 8px; background: #1e293b;"></div>
       </div>
     </div>
 
@@ -202,7 +235,42 @@
         </div>
         
         <div id="hierarchy-list" style="display: none;">
-          <p class="text-muted">Loading hierarchy data...</p>
+          <!-- Master Grid Container -->
+          <div id="hierarchy-grid" class="grid grid-cols-3 gap-4">
+            <!-- Cards injected by JS -->
+          </div>
+          
+          <!-- Urban/Rural Split Containers (Hidden by default) -->
+          <div id="urban-rural-split" style="display: none; margin-top: 2rem;">
+            
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold mb-4 text-blue-400" style="border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">URBAN LOCAL BODIES</h3>
+              
+              <div id="urban-nigam-section" class="mb-6" style="display:none;">
+                <h4 class="text-sm font-bold text-tertiary uppercase tracking-wider mb-3">Nagar Nigam (Corporations)</h4>
+                <div id="urban-nigam-grid" class="grid grid-cols-2 gap-4"></div>
+              </div>
+              
+              <div id="urban-palika-section" class="mb-6" style="display:none;">
+                <h4 class="text-sm font-bold text-tertiary uppercase tracking-wider mb-3">Nagar Palika (Councils)</h4>
+                <div id="urban-palika-grid" class="grid grid-cols-2 gap-4"></div>
+              </div>
+              
+              <div id="urban-panchayat-section" class="mb-6" style="display:none;">
+                <h4 class="text-sm font-bold text-tertiary uppercase tracking-wider mb-3">Nagar Panchayat (Towns)</h4>
+                <div id="urban-panchayat-grid" class="grid grid-cols-2 gap-4"></div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-2xl font-bold mb-4 text-emerald-500" style="border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">RURAL AREAS</h3>
+              <div id="rural-blocks-section" class="mb-6" style="display:none;">
+                <h4 class="text-sm font-bold text-tertiary uppercase tracking-wider mb-3">Development Blocks</h4>
+                <div id="rural-blocks-grid" class="grid grid-cols-2 gap-4"></div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
       
@@ -237,6 +305,7 @@
 
 
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="/js/app.js"></script>
   <script src="/js/admin.js"></script>
 </body>

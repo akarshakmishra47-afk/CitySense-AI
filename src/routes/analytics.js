@@ -4,6 +4,9 @@ const Complaint = require('../models/Complaint');
 const ComplaintCluster = require('../models/ComplaintCluster');
 const { generateSystemInsight, generateHotspotPredictions } = require('../services/ai');
 const authMiddleware = require('../middleware/auth');
+const fs = require('fs');
+const path = require('path');
+const upDistricts = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/up_districts.json'), 'utf-8'));
 
 // GET /api/analytics
 router.get('/', authMiddleware, async (req, res, next) => {
@@ -19,6 +22,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
       query.district = req.user.district;
     } else if (req.user.role === 'admin_state') {
       query.state = req.user.state;
+      if (req.query.district) query.district = req.query.district; // Allow drill-down filtering
     }
 
     // 1. Reports by category (using MongoDB Aggregation)
@@ -110,6 +114,7 @@ router.get('/predictions', authMiddleware, async (req, res, next) => {
       query.district = req.user.district;
     } else if (req.user.role === 'admin_state') {
       query.state = req.user.state;
+      if (req.query.district) query.district = req.query.district;
     }
 
     const clusters = await ComplaintCluster.find(query).limit(10);
@@ -128,13 +133,19 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
     const role = req.user.role;
     let query = {};
     let groupByField = '';
+    let isDistrictDrilldown = false;
 
     if (role === 'admin_state') {
       query.state = req.user.state;
-      groupByField = '$district'; // State sees districts
+      if (req.query.district) {
+        query.district = req.query.district;
+        isDistrictDrilldown = true;
+      } else {
+        groupByField = '$district'; // State sees districts
+      }
     } else if (role === 'admin_district') {
       query.district = req.user.district;
-      groupByField = '$municipalCorp'; // District sees Local Bodies
+      isDistrictDrilldown = true;
     } else if (role === 'admin_city') {
       query.municipalCorp = req.user.municipalCorp;
       groupByField = '$ward';
@@ -146,7 +157,7 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
       { $match: query },
       { 
         $group: {
-          _id: role === 'admin_district' ? { type: '$localBodyType', name: '$municipalCorp' } : groupByField,
+          _id: isDistrictDrilldown ? { type: '$localBodyType', name: { $cond: [{ $in: ['$localBodyType', ['Development Block', 'Gram Panchayat']] }, '$block', '$municipalCorp'] } } : groupByField,
           totalClusters: { $sum: 1 },
           activeClusters: {
             $sum: { $cond: [{ $ne: ["$status", "resolved"] }, 1, 0] }
@@ -167,6 +178,34 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
       },
       { $sort: { criticalClusters: -1, avgPriority: -1 } }
     ]);
+
+    // Apply the "Left Join" for State Admin looking at all districts
+    if (role === 'admin_state' && !req.query.district) {
+      const allDistrictsData = upDistricts.map(districtName => {
+        const found = aggregated.find(a => a._id === districtName);
+        if (found) return found;
+        
+        // Return zero-data state
+        return {
+          _id: districtName,
+          totalClusters: 0,
+          activeClusters: 0,
+          resolvedClusters: 0,
+          pendingClusters: 0,
+          criticalClusters: 0,
+          avgPriority: 0,
+          totalAffected: 0,
+          totalComplaints: 0
+        };
+      });
+      // Sort: active districts first, then alphabetically
+      allDistrictsData.sort((a, b) => {
+        if (b.totalClusters !== a.totalClusters) return b.totalClusters - a.totalClusters;
+        return String(a._id).localeCompare(String(b._id));
+      });
+      
+      return res.json(allDistrictsData);
+    }
 
     res.json(aggregated);
   } catch (error) {
