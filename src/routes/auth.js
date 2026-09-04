@@ -27,7 +27,10 @@ router.post('/login', async (req, res, next) => {
         user = await User.create({ name: 'State Chief Admin', email: 'state@123', password: hashedPassword, role: 'admin_state', state: 'Uttar Pradesh', municipalCorp: null, ward: null });
       } else if (email === 'admin@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Lucknow Commissioner', email: 'admin@123', password: hashedPassword, role: 'admin_city', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: null });
+        user = await User.create({ name: 'Lucknow District Magistrate', email: 'admin@123', password: hashedPassword, role: 'admin_district', state: 'Uttar Pradesh', district: 'Lucknow', municipalCorp: null, ward: null });
+      } else if (email === 'city@123') {
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        user = await User.create({ name: 'Lucknow Commissioner', email: 'city@123', password: hashedPassword, role: 'admin_city', state: 'Uttar Pradesh', district: 'Lucknow', municipalCorp: 'Lucknow', ward: null });
       } else if (email === 'ward@123') {
         const hashedPassword = await bcrypt.hash('123456', 10);
         user = await User.create({ name: 'Ward Engineer (1)', email: 'ward@123', password: hashedPassword, role: 'admin_ward', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
@@ -54,6 +57,7 @@ router.post('/login', async (req, res, next) => {
         name: user.name, 
         email: user.email,
         state: user.state,
+        district: user.district,
         municipalCorp: user.municipalCorp,
         ward: user.ward
       },

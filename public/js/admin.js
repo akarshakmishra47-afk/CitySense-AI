@@ -83,14 +83,14 @@ async function loadDashboardData() {
     const authData = await authRes.json();
     const role = authData?.user?.role || 'admin_ward';
 
-    if (role === 'admin_state' || role === 'admin_city') {
+    if (role === 'admin_state' || role === 'admin_district') {
       // Hide priority list, show hierarchy
       document.getElementById('priority-list').style.display = 'none';
       document.getElementById('hierarchy-list').style.display = 'block';
       
       const titleEl = document.querySelector('h2.text-xl');
       const subtitleEl = document.querySelector('p.text-tertiary.text-sm');
-      if (titleEl) titleEl.textContent = role === 'admin_state' ? 'Municipal Corporations Overview' : 'Wards Overview';
+      if (titleEl) titleEl.textContent = role === 'admin_state' ? 'Districts Overview' : 'Local Bodies Overview';
       if (subtitleEl) subtitleEl.textContent = 'Aggregated performance and active problem tracking';
 
       try {
@@ -110,6 +110,15 @@ async function loadDashboardData() {
            const critical = h.criticalClusters;
            const progressPercent = total === 0 ? 100 : Math.round(((total - active) / total) * 100);
 
+           let titlePrefix = '';
+           if (role === 'admin_district') {
+             // For district admin, name is an object {type, name}
+             name = h._id ? h._id.name : 'Unknown';
+             titlePrefix = (h._id && h._id.type) ? h._id.type + ' - ' : '';
+           } else {
+             name = h._id || 'Unknown';
+           }
+
            const card = document.createElement('div');
            card.className = 'card animate-fade-up mb-4';
            card.style.padding = '1.5rem';
@@ -117,7 +126,7 @@ async function loadDashboardData() {
 
            card.innerHTML = `
              <div class="flex justify-between items-center mb-4">
-               <h3 class="text-2xl font-bold text-white">${role === 'admin_state' ? name : 'Ward ' + name}</h3>
+               <h3 class="text-2xl font-bold text-white">${titlePrefix}${name}</h3>
                <span class="badge ${critical > 0 ? 'badge-critical' : 'badge-high'}">${critical} Critical Clusters</span>
              </div>
              
@@ -147,9 +156,18 @@ async function loadDashboardData() {
              </div>
              
              <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-color); text-align:right;">
-               <button class="btn btn-secondary text-sm">View Detailed Reports</button>
+               <button class="btn btn-secondary text-sm">View Dashboard →</button>
              </div>
            `;
+           
+           // Drill down logic
+           card.onclick = () => {
+             // For hackathon MVP, we just alert or ideally set a URL parameter and reload
+             // window.location.href = \`/admin.html?scope=\${name}\`;
+             alert(\`Drill down to \${name} dashboard not fully implemented yet in MVP.\`);
+           };
+           card.style.cursor = 'pointer';
+
            list.appendChild(card);
         });
       } catch(err) {

@@ -17,10 +17,16 @@ router.get('/', authMiddleware, async (req, res, next) => {
     let query = {};
     if (req.user.role === 'admin_ward') {
       query.ward = req.user.ward;
+      if (req.user.district) query.district = req.user.district;
     } else if (req.user.role === 'admin_city') {
       query.municipalCorp = req.user.municipalCorp;
+      if (req.user.district) query.district = req.user.district;
+    } else if (req.user.role === 'admin_district') {
+      query.district = req.user.district;
+      if (req.query.corp) query.municipalCorp = req.query.corp;
     } else if (req.user.role === 'admin_state') {
       query.state = req.user.state;
+      if (req.query.district) query.district = req.query.district;
       if (req.query.corp) {
         query.municipalCorp = req.query.corp;
       }

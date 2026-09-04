@@ -63,6 +63,10 @@ const complaintSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  district: {
+    type: String,
+    default: null
+  },
   municipalCorp: {
     type: String,
     default: null

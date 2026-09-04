@@ -6,10 +6,24 @@ const { generateSystemInsight, generateHotspotPredictions } = require('../servic
 const authMiddleware = require('../middleware/auth');
 
 // GET /api/analytics
-router.get('/', async (req, res, next) => {
+router.get('/', authMiddleware, async (req, res, next) => {
   try {
+    let query = {};
+    if (req.user.role === 'admin_ward') {
+      query.ward = req.user.ward;
+      if (req.user.district) query.district = req.user.district;
+    } else if (req.user.role === 'admin_city') {
+      query.municipalCorp = req.user.municipalCorp;
+      if (req.user.district) query.district = req.user.district;
+    } else if (req.user.role === 'admin_district') {
+      query.district = req.user.district;
+    } else if (req.user.role === 'admin_state') {
+      query.state = req.user.state;
+    }
+
     // 1. Reports by category (using MongoDB Aggregation)
     const complaintsByCategory = await Complaint.aggregate([
+      { $match: query },
       { $group: { _id: "$category", count: { $sum: 1 } } }
     ]);
 
@@ -19,7 +33,7 @@ router.get('/', async (req, res, next) => {
     }));
 
     // 2. Priority distribution (from clusters)
-    const clusters = await ComplaintCluster.find({}, 'priorityScore');
+    const clusters = await ComplaintCluster.find(query, 'priorityScore');
 
     const priorityDist = { Critical: 0, High: 0, Medium: 0, Low: 0 };
     clusters.forEach(c => {
@@ -35,7 +49,7 @@ router.get('/', async (req, res, next) => {
     sevenDaysAgo.setDate(now.getDate() - 7);
     
     const recentComplaints = await Complaint.find(
-      { createdAt: { $gte: sevenDaysAgo } },
+      { ...query, createdAt: { $gte: sevenDaysAgo } },
       'createdAt'
     );
 
@@ -63,7 +77,7 @@ router.get('/', async (req, res, next) => {
     const emergingInsight = await generateSystemInsight(categoryData, timelineData);
 
     // 5. System Status (Real dynamic data)
-    const totalComplaints = await Complaint.countDocuments();
+    const totalComplaints = await Complaint.countDocuments(query);
     const systemStatus = {
       model: "Qwen 3.8-27B",
       processed: totalComplaints,
@@ -86,9 +100,17 @@ router.get('/', async (req, res, next) => {
 router.get('/predictions', authMiddleware, async (req, res, next) => {
   try {
     let query = {};
-    if (req.user.role === 'admin_ward') query.ward = req.user.ward;
-    else if (req.user.role === 'admin_city') query.municipalCorp = req.user.municipalCorp;
-    else if (req.user.role === 'admin_state') query.state = req.user.state;
+    if (req.user.role === 'admin_ward') {
+      query.ward = req.user.ward;
+      if (req.user.district) query.district = req.user.district;
+    } else if (req.user.role === 'admin_city') {
+      query.municipalCorp = req.user.municipalCorp;
+      if (req.user.district) query.district = req.user.district;
+    } else if (req.user.role === 'admin_district') {
+      query.district = req.user.district;
+    } else if (req.user.role === 'admin_state') {
+      query.state = req.user.state;
+    }
 
     const clusters = await ComplaintCluster.find(query).limit(10);
     const clusterData = clusters.map(c => ({ title: c.title, category: c.category, ward: c.ward, severityScore: c.severityScore }));
@@ -109,7 +131,10 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
 
     if (role === 'admin_state') {
       query.state = req.user.state;
-      groupByField = '$municipalCorp';
+      groupByField = '$district'; // State sees districts
+    } else if (role === 'admin_district') {
+      query.district = req.user.district;
+      groupByField = '$municipalCorp'; // District sees Local Bodies
     } else if (role === 'admin_city') {
       query.municipalCorp = req.user.municipalCorp;
       groupByField = '$ward';
@@ -121,7 +146,7 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
       { $match: query },
       { 
         $group: {
-          _id: role === 'admin_state' ? { type: '$localBodyType', corp: '$municipalCorp' } : groupByField,
+          _id: role === 'admin_district' ? { type: '$localBodyType', name: '$municipalCorp' } : groupByField,
           totalClusters: { $sum: 1 },
           activeClusters: {
             $sum: { $cond: [{ $ne: ["$status", "resolved"] }, 1, 0] }

@@ -110,9 +110,7 @@
         
         if (res.ok) {
           // Redirect based on specific role
-          if (data.role === 'admin_state') {
-            window.location.href = '/admin-state.html';
-          } else if (data.role.startsWith('admin')) {
+          if (data.role === 'admin_state' || data.role === 'admin_district' || data.role === 'admin_city' || data.role === 'admin_ward') {
             window.location.href = '/admin.html';
           } else {
             errorMsg.textContent = 'Unauthorized: Admin access required.';
