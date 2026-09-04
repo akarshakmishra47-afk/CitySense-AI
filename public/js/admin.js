@@ -6,6 +6,7 @@ async function loadDashboardData() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const urlDistrict = urlParams.get('district');
+    const urlCorp = urlParams.get('corp');
 
     // Fetch auth to determine role
     const authRes = await fetch('/api/auth/me');
@@ -17,9 +18,12 @@ async function loadDashboardData() {
     const isDistrictAdmin = role === 'admin_district';
     
     // Determine the current view mode
-    const isStateView = isStateAdmin && !urlDistrict;
-    const isDistrictView = (isStateAdmin && urlDistrict) || isDistrictAdmin;
+    const isStateView = isStateAdmin && !urlDistrict && !urlCorp;
+    const isDistrictView = ((isStateAdmin && urlDistrict) || isDistrictAdmin) && !urlCorp;
+    const isLocalBodyView = urlCorp || role === 'admin_city' || role === 'admin_ward';
+
     const currentDistrict = urlDistrict || authData?.user?.district;
+    const currentCorp = urlCorp || authData?.user?.municipalCorp;
 
     // Update Breadcrumbs & Titles
     const breadcrumbEl = document.getElementById('breadcrumb-nav');
@@ -34,16 +38,24 @@ async function loadDashboardData() {
       breadcrumbEl.innerHTML = `<a href="/admin.html" style="color:var(--primary-brand); text-decoration:none;">${state}</a> &gt; <span class="text-white">${currentDistrict} District</span>`;
       titleEl.textContent = `${currentDistrict} District Command Center`;
       subtitleEl.textContent = 'District-level problem monitoring and urban/rural management';
-    } else {
-      // Local Body / Ward view
-      const localBody = authData?.user?.municipalCorp;
-      breadcrumbEl.innerHTML = `<span>${state}</span> &gt; <span>${authData?.user?.district}</span> &gt; <span class="text-white">${localBody}</span>`;
-      titleEl.textContent = `${localBody} Operations`;
+    } else if (isLocalBodyView) {
+      let bNav = `<span>${state}</span>`;
+      if (currentDistrict) {
+        bNav += ` &gt; <a href="/admin.html?district=${currentDistrict}" style="color:var(--primary-brand); text-decoration:none;">${currentDistrict}</a>`;
+      }
+      bNav += ` &gt; <span class="text-white">${currentCorp}</span>`;
+      breadcrumbEl.innerHTML = bNav;
+      
+      titleEl.textContent = `${currentCorp} Operations`;
       subtitleEl.textContent = 'Local problem clusters and complaints';
     }
 
     // Determine query suffix for fetching data
-    const querySuffix = urlDistrict && isStateAdmin ? `?district=${urlDistrict}` : '';
+    let querySuffix = '';
+    const params = new URLSearchParams();
+    if (urlDistrict && isStateAdmin) params.append('district', urlDistrict);
+    if (urlCorp && (isStateAdmin || isDistrictAdmin)) params.append('corp', urlCorp);
+    if (params.toString()) querySuffix = `?${params.toString()}`;
 
     // Fetch Analytics Data
     let analyticsData = null;
@@ -273,7 +285,7 @@ function renderDistrictView(hierarchyData) {
      const resolved = h.resolvedClusters;
 
      const cardHTML = `
-       <div class="card p-4 hover:border-blue-500 transition-colors cursor-pointer" onclick="alert('Drill down to ${name} not fully implemented in MVP.')">
+       <div class="card p-4 hover:border-blue-500 transition-colors cursor-pointer" onclick="window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'corp=' + encodeURIComponent('${name}')">
          <h4 class="text-lg font-bold text-white mb-2">${name}</h4>
          <p class="text-sm text-slate-300">Complaints: <span class="font-bold">${h.totalComplaints}</span></p>
          <p class="text-sm text-emerald-400">Resolved: <span class="font-bold">${resolved}</span></p>
