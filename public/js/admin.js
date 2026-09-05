@@ -143,6 +143,8 @@ async function loadDashboardData() {
     if (isStateView || isDistrictView) {
       // 1. Show Visualizations
       document.getElementById('priority-list').style.display = 'none';
+      if (document.getElementById('priority-heading')) document.getElementById('priority-heading').style.display = 'none';
+      if (document.getElementById('master-kpis')) document.getElementById('master-kpis').style.display = 'grid';
       document.getElementById('hierarchy-list').style.display = 'block';
       document.getElementById('advanced-visualizations').style.display = 'block';
       // 2. Fetch Hierarchy Data
@@ -167,6 +169,8 @@ async function loadDashboardData() {
     } else if (isLocalBodyView) {
       // Local Body Dashboard: Show full cluster+complaint details
       document.getElementById('priority-list').style.display = 'none';
+      if (document.getElementById('priority-heading')) document.getElementById('priority-heading').style.display = 'none';
+      if (document.getElementById('master-kpis')) document.getElementById('master-kpis').style.display = 'none';
       document.getElementById('hierarchy-list').style.display = 'block';
       document.getElementById('urban-rural-split').style.display = 'block';
       document.getElementById('hierarchy-grid').style.display = 'none';
@@ -176,6 +180,8 @@ async function loadDashboardData() {
 
     } else {
       // Ward/City View: Priority Problems list
+      if (document.getElementById('priority-heading')) document.getElementById('priority-heading').style.display = 'flex';
+      if (document.getElementById('master-kpis')) document.getElementById('master-kpis').style.display = 'grid';
       renderPriorityProblems(clusters);
     }
     
@@ -219,7 +225,7 @@ function renderStateView(hierarchyData) {
            <p>No operational data available yet</p>
          </div>
          <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-color); text-align:right;">
-           <button class="btn btn-secondary text-sm">View District →</button>
+           <button class="btn btn-secondary text-sm" onclick="window.location.href = '/district-dashboard.html?district=' + encodeURIComponent('${name}');">View District →</button>
          </div>
        `;
      } else {
@@ -247,7 +253,7 @@ function renderStateView(hierarchyData) {
            <span class="text-xs font-bold text-emerald-500 uppercase flex items-center gap-1">
              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--emerald-500);"></span> Live Data
            </span>
-           <button class="btn btn-secondary text-sm">View District →</button>
+           <button class="btn btn-secondary text-sm" onclick="window.location.href = '/district-dashboard.html?district=' + encodeURIComponent('${name}');">View District →</button>
          </div>
        `;
      }
@@ -571,27 +577,27 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
                style: function(feature) {
                    const dName = feature.properties.district_name;
                    const hInfo = hierarchyData.find(h => h._id === dName);
-                   let fillColor = '#111827'; // default empty
-                   let weight = 1;
-                   let fillOpacity = 0.5;
-                   
-                   if (hInfo && hInfo.totalClusters > 0) {
-                       if (hInfo.criticalClusters > 0) {
-                           fillColor = '#FF3366'; // Red for critical
-                           fillOpacity = 0.7;
-                       } else {
-                           fillColor = '#00E5FF'; // Cyan for normal
-                           fillOpacity = 0.6;
-                       }
-                   }
-                   
-                   return {
-                       fillColor: fillColor,
-                       weight: 1,
-                       opacity: 1,
-                       color: '#374151', // border color
-                       fillOpacity: fillOpacity
-                   };
+                    let fillColor = '#111827'; // sleek dark fill
+                    let weight = 1;
+                    let fillOpacity = 0.5;
+                    
+                    if (hInfo && hInfo.totalClusters > 0) {
+                        if (hInfo.criticalClusters > 0) {
+                            fillColor = '#FF3366'; // Bright Red for critical
+                            fillOpacity = 0.85;
+                        } else {
+                            fillColor = '#00E5FF'; // Bright Cyan for normal
+                            fillOpacity = 0.85;
+                        }
+                    }
+                    
+                    return {
+                        fillColor: fillColor,
+                        weight: 1,
+                        opacity: 1,
+                        color: '#4b5563', // slightly lighter border so boundaries are visible
+                        fillOpacity: fillOpacity
+                    };
                },
                onEachFeature: function(feature, layer) {
                    const dName = feature.properties.district_name;
@@ -617,7 +623,7 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
                            geoLayer.resetStyle(e.target);
                        },
                        click: function(e) {
-                           window.location.href = '?district=' + encodeURIComponent(dName);
+                           window.location.href = '/admin.html?district=' + encodeURIComponent(dName);
                        }
                    });
                }

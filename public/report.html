@@ -83,6 +83,8 @@
       background: var(--primary-brand);
     }
   </style>
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 </head>
 <body>
 
@@ -132,7 +134,11 @@
               Auto-Locate
             </button>
           </div>
-          <p id="location-status" class="text-sm text-primary-brand mb-4 font-semibold"></p>
+          <p id="location-status" class="text-sm text-primary-brand mb-4 font-semibold">Click on the map or use Auto-Locate to set your location.</p>
+          
+          <!-- Live Location Map -->
+          <div id="location-map" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem; z-index: 1;"></div>
+
           <input type="hidden" id="latitude" name="latitude">
           <input type="hidden" id="longitude" name="longitude">
 
@@ -273,6 +279,7 @@
     <div class="ai-loading-subtext" id="loading-subtext">Extracting keywords and location data</div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="/js/app.js"></script>
   <script src="/js/up-jurisdiction.js"></script>
   <script src="/js/report.js"></script>

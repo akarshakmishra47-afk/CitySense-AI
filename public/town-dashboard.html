@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Body Command Center | CitySense AI</title>
+  <meta name="description" content="Local body civic intelligence dashboard for CitySense AI">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ── Layout ── */
+    .page-wrap { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Header ── */
+    .dash-header {
+      background: rgba(11,15,25,0.97);
+      border-bottom: 1px solid #1f2937;
+      padding: 0 1.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .dash-logo {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #00e5ff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .dash-divider { width: 1px; height: 24px; background: #1f2937; margin: 0 1rem; }
+    .dash-title-text { font-size: 0.85rem; font-weight: 600; color: #9ca3af; }
+    .user-info { display: flex; flex-direction: column; align-items: flex-end; }
+    .user-name { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; }
+    .user-role-text { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
+    .readonly-badge {
+      display: inline-flex; align-items: center; padding: 0.2rem 0.6rem;
+      background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 999px; font-size: 0.65rem; font-weight: 700; color: #f59e0b; text-transform: uppercase;
+    }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #6b7280; margin-bottom: 0.5rem;
+    }
+    .breadcrumb a { color: #00e5ff; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ── KPIs ── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 1200px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .kpi-card {
+      background: rgba(30,41,59,0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.875rem;
+      padding: 1.25rem;
+      animation: fadeUp 0.5s ease forwards;
+    }
+    .kpi-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 0.4rem; }
+    .kpi-value { font-size: 2rem; font-weight: 800; color: #f3f4f6; line-height: 1; }
+    .kpi-value.critical { color: #FF3366; }
+    .kpi-value.success { color: #10b981; }
+    .kpi-value.warning { color: #f59e0b; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #1f2937;
+      margin-bottom: 2rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #9ca3af; }
+    .tab-btn.active {
+      color: #00e5ff;
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #00e5ff;
+      border-radius: 2px 2px 0 0;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Overview Charts ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 1024px) { .charts-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .charts-row { grid-template-columns: 1fr; } }
+
+    .section-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Complaint Cards ── */
+    .complaint-card {
+      background: rgba(30,41,59,0.65);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.875rem;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease forwards;
+    }
+    .complaint-card-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      padding: 1.25rem;
+      align-items: start;
+    }
+    .complaint-photo {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .complaint-photo-placeholder {
+      width: 100%;
+      height: 200px;
+      background: #0b0f19;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+    }
+    .complaint-id {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      margin-bottom: 0.35rem;
+    }
+    .complaint-desc {
+      font-size: 0.9rem;
+      color: #d1d5db;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+    .complaint-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-bottom: 0.75rem;
+    }
+    .severity-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-select-wrap {
+      background: #0b0f19;
+      border: 1px solid #374151;
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .status-select-wrap select {
+      flex: 1;
+      background: #111827;
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+    .ai-summary-box {
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      margin-top: 0.75rem;
+    }
+
+    /* ── Cluster / AI Cards ── */
+    .cluster-card {
+      background: rgba(30,41,59,0.65);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.875rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease forwards;
+    }
+    .cluster-priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .ai-recommendation {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .ai-rec-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Map ── */
+    #town-map { height: 400px; border-radius: 0.75rem; }
+
+    /* ── Filters ── */
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .filter-bar select, .filter-bar input {
+      background: rgba(30,41,59,0.8);
+      border: 1px solid #374151;
+      color: #f3f4f6;
+      padding: 0.4rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .filter-bar input { flex: 1; min-width: 200px; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: rgba(30,41,59,0.4);
+      border: 1px dashed #374151;
+      border-radius: 0.875rem;
+      color: #6b7280;
+    }
+
+    /* ── Loading overlay ── */
+    #loading-overlay {
+      position: fixed; inset: 0; background: #0b0f19; z-index: 1000;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1rem;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="admin-theme">
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p style="color:#9ca3af; font-size:0.9rem;">Loading Command Center...</p>
+  </div>
+
+  <!-- Header -->
+  <header class="dash-header">
+    <div style="display:flex; align-items:center;">
+      <a href="/" class="dash-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        CitySense AI
+      </a>
+      <div class="dash-divider"></div>
+      <span class="dash-title-text" id="header-lb-name">Loading...</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <span id="readonly-badge-header" style="display:none;"><span class="readonly-badge">👁 View Only</span></span>
+      <div class="user-info">
+        <span class="user-name" id="user-name-display">—</span>
+        <span class="user-role-text" id="user-role-display">—</span>
+      </div>
+      <button class="btn btn-secondary" id="logout-btn" style="font-size:0.8rem; padding:0.4rem 0.8rem;">Log Out</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="page-wrap">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" id="breadcrumb-nav" style="animation: fadeUp 0.4s ease forwards; margin-bottom:0.5rem;">
+      <a href="/admin.html">Uttar Pradesh</a>
+      <span>›</span>
+      <a href="#" id="bc-district-link">District</a>
+      <span>›</span>
+      <span id="bc-lb-name">Local Body</span>
+    </div>
+
+    <!-- Title -->
+    <div style="margin-bottom:2rem; animation: fadeUp 0.4s ease forwards;">
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <h1 id="lb-title" style="font-size:2rem; font-weight:800; color:#f3f4f6; letter-spacing:-0.02em;">Loading...</h1>
+        <span id="lb-type-badge" style="padding:0.2rem 0.75rem; border-radius:999px; font-size:0.7rem; font-weight:700; text-transform:uppercase; background:rgba(0,229,255,0.1); color:#00e5ff; border:1px solid rgba(0,229,255,0.25);"></span>
+      </div>
+      <p id="lb-subtitle" style="color:#6b7280; font-size:0.875rem; margin-top:0.25rem;"></p>
+    </div>
+
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total</div>
+        <div class="kpi-value" id="kpi-total">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pending</div>
+        <div class="kpi-value warning" id="kpi-pending">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Resolved</div>
+        <div class="kpi-value success" id="kpi-resolved">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Critical</div>
+        <div class="kpi-value critical" id="kpi-critical">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">High Priority</div>
+        <div class="kpi-value warning" id="kpi-high">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Resolution Rate</div>
+        <div class="kpi-value" id="kpi-rate">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview" id="tab-overview">Overview</button>
+      <button class="tab-btn" data-tab="complaints" id="tab-complaints">Complaints <span id="complaint-count-badge" style="background:#374151; border-radius:999px; padding:0.1rem 0.5rem; font-size:0.7rem; margin-left:0.3rem;">—</span></button>
+      <button class="tab-btn" data-tab="ai" id="tab-ai">AI Insights</button>
+      <button class="tab-btn" data-tab="ai-command" id="tab-ai-command">AI Command Center</button>
+      <button class="tab-btn" data-tab="map" id="tab-map">Map</button>
+    </div>
+
+    <!-- Tab: Overview -->
+    <div class="tab-panel active" id="panel-overview">
+      <div class="charts-row">
+        <div class="card p-4">
+          <div class="section-title">Problems Over Time (30 Days)</div>
+          <canvas id="chart-trend" height="120"></canvas>
+        </div>
+        <div class="card p-4">
+          <div class="section-title">Status Distribution</div>
+          <canvas id="chart-status" height="200"></canvas>
+        </div>
+        <div class="card p-4">
+          <div class="section-title">By Category</div>
+          <canvas id="chart-category" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Complaints -->
+    <div class="tab-panel" id="panel-complaints">
+      <div class="filter-bar">
+        <select id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="submitted">Submitted</option>
+          <option value="investigating">Investigating</option>
+          <option value="assigned">Assigned</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+          <option value="escalated">Escalated</option>
+        </select>
+        <select id="filter-category">
+          <option value="">All Categories</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search complaints...">
+      </div>
+      <div id="complaints-container">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto 1rem;"></div></div>
+      </div>
+    </div>
+
+    <!-- Tab: AI Insights -->
+    <div class="tab-panel" id="panel-ai">
+      <div id="ai-container">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto 1rem;"></div></div>
+      </div>
+    </div>
+
+    <!-- Tab: AI Command Center -->
+    <div class="tab-panel" id="panel-ai-command">
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.5rem; font-weight:800; color:#f3f4f6; margin-bottom:0.5rem;">🧠 AI Command Center</h2>
+        <p style="color:#6b7280; font-size:0.85rem;">Real-time AI-powered civic intelligence and action recommendations</p>
+      </div>
+      <div style="margin-bottom:2rem;">
+        <h3 style="font-size:1rem; font-weight:700; color:#ef4444; margin-bottom:1rem;">🔴 TOP PRIORITY ACTIONS</h3>
+        <div id="ai-action-queue"><div class="spinner" style="margin:1rem auto;"></div></div>
+      </div>
+      <div style="margin-bottom:2rem;">
+        <h3 style="font-size:1rem; font-weight:700; color:#f59e0b; margin-bottom:1rem;">⚠️ EMERGING RISKS</h3>
+        <div id="ai-emerging-risks"><div class="spinner" style="margin:1rem auto;"></div></div>
+      </div>
+      <div style="margin-bottom:2rem;">
+        <h3 style="font-size:1rem; font-weight:700; color:#eab308; margin-bottom:1rem;">🕐 RESOLUTION RISKS</h3>
+        <div id="ai-resolution-risks"><div class="spinner" style="margin:1rem auto;"></div></div>
+      </div>
+    </div>
+
+    <!-- Tab: Map -->
+    <div class="tab-panel" id="panel-map">
+      <div class="card p-4">
+        <div class="section-title">Complaint Locations</div>
+        <div id="town-map"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Complaint Detail Modal -->
+  <div id="detail-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:500; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px);">
+    <div style="background:#111827; border:1px solid #374151; border-radius:1rem; width:100%; max-width:860px; max-height:90vh; overflow-y:auto; padding:2rem;">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1.5rem;">
+        <div>
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:0.35rem;">Complaint Detail</div>
+          <h2 id="modal-title" style="font-size:1.5rem;font-weight:800;color:#f3f4f6;">—</h2>
+        </div>
+        <button id="modal-close" style="background:#1f2937;border:1px solid #374151;color:#9ca3af;border-radius:0.5rem;padding:0.4rem 0.8rem;cursor:pointer;font-size:1.2rem;">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <div id="modal-photo-container" style="border-radius:0.5rem;overflow:hidden;margin-bottom:1rem;background:#0b0f19;height:220px;display:flex;align-items:center;justify-content:center;">
+            <img id="modal-photo" src="" alt="Complaint Photo" style="width:100%;height:100%;object-fit:cover;display:none;">
+            <span id="modal-no-photo" style="color:#374151;font-size:0.85rem;">No photo attached</span>
+          </div>
+
+          <div id="modal-map" style="height:150px;border-radius:0.5rem;background:#0b0f19;margin-bottom:1rem;"></div>
+        </div>
+
+        <div>
+          <div style="margin-bottom:1rem;">
+            <div class="section-title">Description</div>
+            <p id="modal-desc" style="color:#d1d5db;font-size:0.9rem;line-height:1.6;"></p>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div><div class="section-title">Category</div><div id="modal-category" style="color:#f3f4f6;font-weight:700;"></div></div>
+            <div><div class="section-title">Date</div><div id="modal-date" style="color:#f3f4f6;font-size:0.85rem;"></div></div>
+            <div><div class="section-title">Priority Score</div><div id="modal-severity" style="font-size:1.5rem;font-weight:800;"></div></div>
+            <div><div class="section-title">Duration</div><div id="modal-duration" style="color:#f3f4f6;"></div></div>
+          </div>
+          <div style="margin-bottom:1rem;">
+            <div class="section-title">Location</div>
+            <div id="modal-location" style="color:#d1d5db;font-size:0.85rem;"></div>
+          </div>
+          <div id="modal-ai-box" class="ai-summary-box" style="display:none;">
+            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:#60a5fa;margin-bottom:0.4rem;">🤖 AI Analysis</div>
+            <div id="modal-ai-text"></div>
+          </div>
+          <div id="modal-status-section" class="status-select-wrap" style="display:none; flex-direction:column; align-items:stretch;">
+            <label style="font-size:0.75rem;font-weight:700;color:#6b7280;white-space:nowrap;margin-bottom:0.25rem;">Update Status</label>
+            <div style="display:flex; gap:0.75rem;">
+              <select id="modal-status-select" style="flex:1;">
+                <option value="submitted">Submitted</option>
+                <option value="investigating">Investigating</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="escalated">Escalated</option>
+              </select>
+            </div>
+            
+            <div id="resolution-fields" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid #374151;">
+              <label style="font-size:0.75rem;font-weight:700;color:#6b7280;">Resolution Note</label>
+              <textarea id="modal-resolution-note" placeholder="What was done to resolve this issue?" style="background:#111827; border:1px solid #374151; color:#f3f4f6; padding:0.5rem; border-radius:0.375rem; font-size:0.85rem; width:100%; min-height:60px;"></textarea>
+              
+              <label style="font-size:0.75rem;font-weight:700;color:#6b7280; margin-top:0.5rem;">After Photo (Optional)</label>
+              <input type="file" id="modal-resolution-photo" accept="image/*" style="color:#f3f4f6; font-size:0.8rem;">
+              
+              <div id="modal-ai-resolution-check" style="display:none; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); padding:0.75rem; border-radius:0.5rem; margin-top:0.5rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:#10b981; margin-bottom:0.5rem;">AI RESOLUTION CHECK</div>
+                <div id="modal-ai-resolution-status" style="font-size:0.85rem; font-weight:bold; color:#f3f4f6;"></div>
+                <ul id="modal-ai-resolution-evidence" style="font-size:0.8rem; color:#d1d5db; margin:0.5rem 0 0 1rem;"></ul>
+                <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+                  <button id="btn-confirm-resolution" class="btn btn-primary" style="flex:1; padding:0.4rem;">Confirm Resolution</button>
+                  <button id="btn-reject-resolution" class="btn btn-secondary" style="flex:1; padding:0.4rem;">Reject</button>
+                </div>
+              </div>
+            </div>
+            
+            <button id="modal-status-btn" class="btn btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem; margin-top:0.75rem;">Update Status</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/js/town-dashboard.js"></script>
+
+<script>
+window.loadAiCommandCenter = async function() {
+  try {
+    const res = await fetch('/api/ai/command-center');
+    if(!res.ok) throw new Error('AI Engine failed');
+    const data = await res.json();
+    
+    // Render Queue
+    const qEl = document.getElementById('ai-action-queue');
+    if(!data.actionQueue || !data.actionQueue.length) qEl.innerHTML = '<p style="color:#6b7280;">No critical actions detected.</p>';
+    else {
+      qEl.innerHTML = data.actionQueue.map((item, i) => `
+        <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); padding:1rem; border-radius:8px; margin-bottom:1rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="color:#f87171; font-weight:800;">#${i+1} ${item.title}</span>
+            <span style="background:#ef4444; color:#fff; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.75rem; font-weight:bold;">Score ${item.priorityScore}</span>
+          </div>
+          <p style="color:#d1d5db; font-size:0.85rem; margin-bottom:0.5rem;">Critical • ${item.affectedComplaints} complaints</p>
+          <div style="background:rgba(0,0,0,0.3); padding:0.5rem; border-radius:4px; font-size:0.8rem; margin-bottom:0.5rem;">
+            <span style="color:#10b981; font-weight:bold;">Recommended Action:</span> ${item.recommendedAction}
+          </div>
+          <p style="color:#9ca3af; font-size:0.75rem;"><strong>Why:</strong> ${item.reason}</p>
+        </div>
+      `).join('');
+    }
+    
+    // Render Emerging
+    const eEl = document.getElementById('ai-emerging-risks');
+    if(!data.emergingRisks || !data.emergingRisks.length) eEl.innerHTML = '<p style="color:#6b7280;">No emerging risks detected.</p>';
+    else {
+      eEl.innerHTML = data.emergingRisks.map(item => `
+        <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); padding:1rem; border-radius:8px; margin-bottom:1rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="color:#fbbf24; font-weight:800;">${item.problemType} — ${item.area}</span>
+            <span style="background:#f59e0b; color:#fff; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.75rem; font-weight:bold;">Risk ${item.riskScore}</span>
+          </div>
+          <p style="color:#d1d5db; font-size:0.85rem;">${item.explanation}</p>
+        </div>
+      `).join('');
+    }
+
+    // Render Resolution Risks
+    const rEl = document.getElementById('ai-resolution-risks');
+    if(!data.resolutionRisks || !data.resolutionRisks.length) rEl.innerHTML = '<p style="color:#6b7280;">No resolution risks detected.</p>';
+    else {
+      rEl.innerHTML = data.resolutionRisks.map(item => `
+        <div style="background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.3); padding:1rem; border-radius:8px; margin-bottom:1rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="color:#facc15; font-weight:800;">${item.title}</span>
+            <span style="background:#eab308; color:#fff; padding:0.1rem 0.5rem; border-radius:4px; font-size:0.75rem; font-weight:bold;">Risk ${item.riskScore}</span>
+          </div>
+          <p style="color:#d1d5db; font-size:0.85rem; margin-bottom:0.5rem;">${item.reasons.join(' • ')}</p>
+        </div>
+      `).join('');
+    }
+    
+  } catch(e) {
+    document.getElementById('ai-action-queue').innerHTML = '<p style="color:#ef4444;">AI insight temporarily unavailable</p>';
+    document.getElementById('ai-emerging-risks').innerHTML = '<p style="color:#ef4444;">AI insight temporarily unavailable</p>';
+    document.getElementById('ai-resolution-risks').innerHTML = '<p style="color:#ef4444;">AI insight temporarily unavailable</p>';
+  }
+};
+</script>
+
+</body>
+</html>

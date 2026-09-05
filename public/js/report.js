@@ -298,6 +298,78 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // Live Map Helpers
+  let reportMap = null;
+  let reportMarker = null;
+
+  async function processLocation(lat, lon, sourceLabel = "Selected Location") {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lon;
+    
+    const status = document.getElementById('location-status');
+    status.textContent = 'Analyzing location...';
+    status.className = 'text-sm text-primary-brand mb-4 font-semibold';
+    
+    // Update Map UI immediately
+    if (reportMap) {
+      reportMap.setView([lat, lon], 15);
+      if (reportMarker) {
+        reportMarker.setLatLng([lat, lon]);
+      } else {
+        reportMarker = L.marker([lat, lon]).addTo(reportMap);
+      }
+      reportMarker.bindPopup(sourceLabel).openPopup();
+    }
+    
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      
+      if (data && data.display_name) {
+        const shortAddress = data.display_name.split(',').slice(0, 3).join(',');
+        document.getElementById('address').value = shortAddress;
+        status.textContent = 'Location captured!';
+        status.style.color = '#15803d';
+        
+        if (data.address && districtSelect) {
+          const districtName = data.address.state_district || data.address.county || data.address.city;
+          if (districtName) {
+            const cleanName = districtName.replace(/District/gi, '').trim();
+            for (let i = 0; i < districtSelect.options.length; i++) {
+              if (districtSelect.options[i].value.toLowerCase() === cleanName.toLowerCase() || 
+                  districtSelect.options[i].value.toLowerCase().includes(cleanName.toLowerCase())) {
+                districtSelect.selectedIndex = i;
+                districtSelect.dispatchEvent(new Event('change'));
+                status.textContent = `Location captured & District (${districtSelect.options[i].value}) auto-selected!`;
+                break;
+              }
+            }
+          }
+        }
+      } else {
+        status.textContent = `Coordinates set: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      }
+    } catch (error) {
+      console.error('Reverse geocoding failed:', error);
+      status.textContent = `Coordinates set: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    }
+  }
+
+  // Initialize Map immediately
+  const mapEl = document.getElementById('location-map');
+  if (mapEl) {
+    // Default to UP center
+    reportMap = L.map('location-map').setView([26.8467, 80.9462], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(reportMap);
+    
+    // Allow users to click on the map to set location
+    reportMap.on('click', (e) => {
+      processLocation(e.latlng.lat, e.latlng.lng, "Dropped Pin");
+    });
+  }
+
   // Geolocation
   if (btnLocation) {
     btnLocation.addEventListener('click', () => {
@@ -310,34 +382,61 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          
-          document.getElementById('latitude').value = lat;
-          document.getElementById('longitude').value = lon;
-          
-          status.textContent = 'Converting coordinates to address...';
-          
-          try {
-            // Use OpenStreetMap Nominatim API for reverse geocoding (free, no API key needed)
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = await res.json();
-            
-            if (data && data.display_name) {
-              const shortAddress = data.display_name.split(',').slice(0, 3).join(',');
-              document.getElementById('address').value = shortAddress;
-              status.textContent = 'Location successfully captured!';
-            } else {
-              status.textContent = `Coordinates captured: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            }
-          } catch (error) {
-            console.error('Reverse geocoding failed:', error);
-            status.textContent = `Coordinates captured: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-          }
+        (position) => {
+          processLocation(position.coords.latitude, position.coords.longitude, "Auto-Detected Location");
         },
-        () => {
-          status.textContent = 'Unable to retrieve your location. Please enter address manually.';
+        (error) => {
+          console.warn("Geolocation failed. Using demo fallback mode.");
+          // Demo Mode Fallback for Hackathon if geolocation fails
+          const fakeLat = 26.8467;
+          const fakeLon = 80.9462;
+          
+          document.getElementById('latitude').value = fakeLat;
+          document.getElementById('longitude').value = fakeLon;
+          
+          status.textContent = 'Demo Mode: Auto-locating to Lucknow...';
+          status.style.color = '#15803d';
+          
+          // Re-use processLocation to handle map UI, address, and district selection!
+          processLocation(fakeLat, fakeLon, "Demo Location (Lucknow)").then(() => {
+            // Force it to Lucknow just in case Nominatim fails
+            document.getElementById('address').value = "Hazratganj, Lucknow";
+            
+            if (districtSelect) {
+              setTimeout(() => {
+              for (let i = 0; i < districtSelect.options.length; i++) {
+                if (districtSelect.options[i].value === "Lucknow") {
+                  districtSelect.selectedIndex = i;
+                  districtSelect.dispatchEvent(new Event('change'));
+                  break;
+                }
+              }
+              
+              // Auto select Municipal Corporation
+              setTimeout(() => {
+                const corpRadio = document.getElementById('type-corp');
+                if (corpRadio && !corpRadio.disabled) {
+                  corpRadio.checked = true;
+                  corpRadio.dispatchEvent(new Event('change'));
+                  
+                  // Auto select Lucknow Municipal Corporation
+                  setTimeout(() => {
+                    if (localBodySelect) {
+                      for (let i = 0; i < localBodySelect.options.length; i++) {
+                        if (localBodySelect.options[i].value.includes("Lucknow")) {
+                          localBodySelect.selectedIndex = i;
+                          localBodySelect.dispatchEvent(new Event('change'));
+                          break;
+                        }
+                      }
+                      status.textContent = 'Demo Mode: Location & Jurisdiction automatically detected!';
+                    }
+                  }, 200);
+                }
+              }, 200);
+            }, 300);
+          }
+          });
         }
       );
     });

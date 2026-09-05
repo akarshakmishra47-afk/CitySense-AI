@@ -237,8 +237,8 @@ async function transcribeAudio(filePath) {
   }
 }
 
-async function verifyResolutionPhoto(base64Image, complaintDescription) {
-  if (!groq) return { isResolved: true, reason: "AI offline, auto-approved for demo." };
+async function verifyResolution(beforeImageBase64, afterImageBase64, complaintDetails, note) {
+  if (!groq) return { verificationStatus: "UNAVAILABLE", confidence: 0, evidence: ["AI offline."] };
   try {
     const response = await groq.chat.completions.create({
       model: "llama-3.2-11b-vision-preview",
@@ -246,17 +246,22 @@ async function verifyResolutionPhoto(base64Image, complaintDescription) {
         {
           role: "user",
           content: [
-            { type: "text", text: `Verify if this photo shows a resolved civic issue. Original issue: "${complaintDescription}". Reply strictly with JSON: {"isResolved": boolean, "reason": "short explanation"}` },
-            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
+            { type: "text", text: `Verify if these photos show a resolved civic issue. Original issue: "${complaintDetails}". Resolution Note: "${note}". Reply strictly with JSON: {"verificationStatus": "LIKELY_RESOLVED" | "UNCERTAIN" | "NOT_RESOLVED", "confidence": number(0-100), "evidence": ["reason 1", "reason 2"]}` },
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${afterImageBase64}` } }
           ]
         }
       ],
       response_format: { type: "json_object" }
     });
-    return JSON.parse(response.choices[0].message.content);
+    const parsed = JSON.parse(response.choices[0].message.content);
+    return {
+      verificationStatus: parsed.verificationStatus || "UNCERTAIN",
+      confidence: parsed.confidence || 50,
+      evidence: parsed.evidence || ["AI returned unstructured response"]
+    };
   } catch (err) {
-    console.error("Vision AI failed:", err.message);
-    return { isResolved: true, reason: "Verification API failed, bypassing for demo." };
+    console.error("AI vision verification failed:", err.message);
+    return { verificationStatus: "UNAVAILABLE", confidence: 0, evidence: ["Vision model unavailable for this API key or error occurred."] };
   }
 }
 
@@ -326,7 +331,7 @@ module.exports = {
   generateSystemInsight,
   generateMockComplaints,
   transcribeAudio,
-  verifyResolutionPhoto,
+  verifyResolution,
   generateHotspotPredictions,
   evaluateMunicipalPerformance
 };

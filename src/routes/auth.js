@@ -10,42 +10,48 @@ const JWT_SECRET = process.env.JWT_SECRET || 'citysense_secret_key_123!';
 // POST /api/auth/login
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
+    email = email.trim(); // Prevent copy-paste whitespace issues
+
     let user = await User.findOne({ email });
 
     // --- HACKATHON DEMO FALLBACK ---
-    // If the judges use the exact demo credentials but the database wasn't seeded,
-    // we create the accounts on the fly so the demo never fails.
-    if (!user && password === '123456') {
-      if (email === 'state@123') {
+    // If the judges use the exact demo credentials, always let them in.
+    if (password === '123456') {
+      let created = false;
+      if (!user) {
+        created = true;
         const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'State Chief Admin', email: 'state@123', password: hashedPassword, role: 'admin_state', state: 'Uttar Pradesh', municipalCorp: null, ward: null });
-      } else if (email === 'admin@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Lucknow District Magistrate', email: 'admin@123', password: hashedPassword, role: 'admin_district', state: 'Uttar Pradesh', district: 'Lucknow', municipalCorp: null, ward: null });
-      } else if (email === 'city@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Lucknow Commissioner', email: 'city@123', password: hashedPassword, role: 'admin_city', state: 'Uttar Pradesh', district: 'Lucknow', municipalCorp: 'Lucknow', ward: null });
-      } else if (email === 'ward@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Ward Engineer (1)', email: 'ward@123', password: hashedPassword, role: 'admin_ward', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
-      } else if (email === 'citizen@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
-      } else if (email === 'corp@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Municipal Corp Admin', email: 'corp@123', password: hashedPassword, role: 'admin_municipal_corp', state: 'Uttar Pradesh', district: 'Kanpur Nagar', localBodyId: 'UP_KANPUR_NAGAR_KANPUR_MUNICIPAL_CORPORATION', localBodyName: 'Kanpur Municipal Corporation' });
-      } else if (email === 'council@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Municipal Council Admin', email: 'council@123', password: hashedPassword, role: 'admin_municipal_council', state: 'Uttar Pradesh', district: 'Hardoi', localBodyId: 'UP_HARDOI_HARDOI_MUNICIPAL_COUNCIL', localBodyName: 'Hardoi Municipal Council' });
-      } else if (email === 'town@123') {
-        const hashedPassword = await bcrypt.hash('123456', 10);
-        user = await User.create({ name: 'Town Council Admin', email: 'town@123', password: hashedPassword, role: 'admin_town_council', state: 'Uttar Pradesh', district: 'Hardoi', localBodyId: 'UP_HARDOI_SANDILA_TOWN_COUNCIL', localBodyName: 'Sandila Town Council' });
+        if (email === 'state@123') {
+          user = await User.create({ name: 'State Chief Admin', email: 'state@123', password: hashedPassword, role: 'admin_state', state: 'Uttar Pradesh', municipalCorp: null, ward: null });
+        } else if (email === 'admin@123') {
+          user = await User.create({ name: 'Lucknow District Magistrate', email: 'admin@123', password: hashedPassword, role: 'admin_district', state: 'Uttar Pradesh', district: 'Lucknow', municipalCorp: null, ward: null });
+        } else if (email === 'city@123') {
+          user = await User.create({ name: 'Lucknow Commissioner', email: 'city@123', password: hashedPassword, role: 'admin_city', state: 'Uttar Pradesh', district: 'Lucknow', municipalCorp: 'Lucknow', ward: null });
+        } else if (email === 'ward@123') {
+          user = await User.create({ name: 'Ward Engineer (1)', email: 'ward@123', password: hashedPassword, role: 'admin_ward', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
+        } else if (email === 'citizen@123') {
+          user = await User.create({ name: 'Demo Citizen', email: 'citizen@123', password: hashedPassword, role: 'citizen', state: 'Uttar Pradesh', municipalCorp: 'Lucknow', ward: '1' });
+        } else if (email === 'corp@123') {
+          user = await User.create({ name: 'Municipal Corp Admin', email: 'corp@123', password: hashedPassword, role: 'admin_municipal_corp', state: 'Uttar Pradesh', district: 'Kanpur Nagar', localBodyId: 'UP_KANPUR_NAGAR_KANPUR_MUNICIPAL_CORPORATION', localBodyName: 'Kanpur Municipal Corporation' });
+        } else if (email === 'council@123') {
+          user = await User.create({ name: 'Municipal Council Admin', email: 'council@123', password: hashedPassword, role: 'admin_municipal_council', state: 'Uttar Pradesh', district: 'Hardoi', localBodyId: 'UP_HARDOI_HARDOI_MUNICIPAL_COUNCIL', localBodyName: 'Hardoi Municipal Council' });
+        } else if (email === 'town@123') {
+          user = await User.create({ name: 'Town Council Admin', email: 'town@123', password: hashedPassword, role: 'admin_town_council', state: 'Uttar Pradesh', district: 'Hardoi', localBodyId: 'UP_HARDOI_SANDILA_TOWN_COUNCIL', localBodyName: 'Sandila Town Council' });
+        }
+      }
+      
+      // If they used a recognized demo email and password 123456, we bypass the DB bcrypt check
+      // just in case they previously registered it with a different password during testing.
+      const DEMO_ACCOUNTS = ['state@123', 'admin@123', 'city@123', 'ward@123', 'citizen@123', 'corp@123', 'council@123', 'town@123'];
+      if (DEMO_ACCOUNTS.includes(email) && user) {
+        // Force authentication success
+        req.demoBypass = true; 
       }
     }
 
@@ -53,9 +59,11 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
+    if (!req.demoBypass) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
     }
 
     // Create JWT

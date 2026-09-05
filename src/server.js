@@ -35,6 +35,13 @@ app.use('/api/cron', cronRoutes);
 
 const localBodyDashboardRoutes = require('./routes/local-body-dashboard');
 app.use('/api/local-body', localBodyDashboardRoutes);
+
+const districtDashboardRoutes = require('./routes/district-dashboard');
+app.use('/api/district', districtDashboardRoutes);
+
+const aiEngineRoutes = require('./routes/ai-engine');
+app.use('/api/ai', aiEngineRoutes);
+
 // Fallback to index.html for unmatched routes (if using HTML5 history API, though we use distinct HTML files here)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));

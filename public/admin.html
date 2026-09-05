@@ -173,7 +173,7 @@
     </div>
 
     <!-- KPIs -->
-    <div class="grid grid-cols-4 gap-6 mb-12">
+    <div id="master-kpis" class="grid grid-cols-4 gap-6 mb-12">
       <div class="card kpi-card animate-fade-up" style="animation-delay: 0.1s;">
         <div class="kpi-label">Pending Reports</div>
         <div id="stat-reports" class="kpi-value">--</div>
@@ -225,14 +225,12 @@
     <div style="gap: 2rem;">
       <!-- Main Content -->
       <div class="min-w-0">
-        <div class="mb-6 flex justify-between items-end">
+        <div id="priority-heading" class="mb-6 flex justify-between items-end">
           <div>
             <h2 class="text-xl">Priority Problems</h2>
             <p class="text-tertiary text-sm">AI-ranked civic issues requiring immediate attention</p>
           </div>
-          <div>
-            <input type="text" id="district-search" placeholder="Search districts..." style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 4px; width: 250px; outline: none;">
-          </div>
+          <!-- Search bar removed as per request -->
         </div>
         
         <div id="priority-list">

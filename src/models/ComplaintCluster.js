@@ -70,6 +70,26 @@ const complaintClusterSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  resolutionNote: {
+    type: String,
+    default: null
+  },
+  resolutionAiVerification: {
+    type: String, // 'LIKELY_RESOLVED', 'UNCERTAIN', 'NOT_RESOLVED', 'UNAVAILABLE'
+    default: null
+  },
+  resolutionAiConfidence: {
+    type: Number,
+    default: null
+  },
+  emergingRiskScore: {
+    type: Number,
+    default: 0
+  },
+  emergingRiskReasons: {
+    type: String, // JSON array string
+    default: null
+  },
   complaints: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Complaint'
