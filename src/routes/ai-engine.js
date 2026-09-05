@@ -159,4 +159,32 @@ router.post('/verify-resolution/:clusterId', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/ai-engine/analyze-cluster/:id
+ * Run AI root cause analysis on a cluster on demand
+ */
+router.post('/analyze-cluster/:id', async (req, res) => {
+    try {
+        const cluster = await ComplaintCluster.findById(req.params.id).populate('complaints');
+        if (!cluster) return res.status(404).json({ error: 'Cluster not found' });
+
+        const { generateRootCause } = require('../services/ai');
+        const descriptions = (cluster.complaints || []).map(c => c.description || c.aiSummary || '').filter(Boolean);
+        if (descriptions.length === 0) descriptions.push(cluster.title);
+
+        const aiInsights = await generateRootCause(cluster.category || 'General', descriptions);
+
+        cluster.probableRootCause = aiInsights.probableRootCause;
+        cluster.rootCauseConfidence = aiInsights.confidence;
+        cluster.evidence = JSON.stringify(aiInsights.evidence);
+        cluster.recommendedAction = aiInsights.recommendedAction;
+        await cluster.save();
+
+        res.json({ success: true, probableRootCause: aiInsights.probableRootCause, confidence: aiInsights.confidence, evidence: aiInsights.evidence, recommendedAction: aiInsights.recommendedAction });
+    } catch (err) {
+        console.error('analyze-cluster error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

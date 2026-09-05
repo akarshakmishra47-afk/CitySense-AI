@@ -35,11 +35,15 @@ async function processNewComplaint(complaintData, userId, imageUrl = null) {
     bodyType: complaintData.bodyType || null,
     bodyName: complaintData.bodyName || null,
     localBodyType: complaintData.localBodyType || null,
-    municipalCorp: complaintData.municipalCorp || null
+    municipalCorp: complaintData.municipalCorp || null,
+    state: 'Uttar Pradesh'
   });
 
-  // 3. Find Matching Cluster
-  const existingClusters = await ComplaintCluster.find().populate('complaints');
+  // 3. Find Matching Cluster — only match within the same local body
+  const clusterQuery = {};
+  if (complaint.district) clusterQuery.district = complaint.district;
+  if (complaint.municipalCorp) clusterQuery.municipalCorp = complaint.municipalCorp;
+  const existingClusters = await ComplaintCluster.find(clusterQuery).populate('complaints');
 
   let bestCluster = null;
   let highestSimilarity = 0.4; // Threshold
@@ -58,6 +62,11 @@ async function processNewComplaint(complaintData, userId, imageUrl = null) {
     // 4a. Attach to existing cluster
     finalCluster = bestCluster;
     finalCluster.complaints.push(complaint._id);
+    // Backfill jurisdiction fields if the cluster is missing them
+    if (!finalCluster.district && complaint.district) finalCluster.district = complaint.district;
+    if (!finalCluster.municipalCorp && complaint.municipalCorp) finalCluster.municipalCorp = complaint.municipalCorp;
+    if (!finalCluster.localBodyType && complaint.localBodyType) finalCluster.localBodyType = complaint.localBodyType;
+    finalCluster.state = 'Uttar Pradesh';
     await finalCluster.save();
     
     complaint.clusters.push(finalCluster._id);
@@ -70,7 +79,11 @@ async function processNewComplaint(complaintData, userId, imageUrl = null) {
       latitude: lat,
       longitude: lng,
       priorityScore: calculatePriority(analysis.severity, 10, 10, durationDays).score,
-      complaints: [complaint._id]
+      complaints: [complaint._id],
+      district: complaint.district,
+      municipalCorp: complaint.municipalCorp,
+      localBodyType: complaint.localBodyType,
+      state: 'Uttar Pradesh'
     });
     
     complaint.clusters.push(finalCluster._id);

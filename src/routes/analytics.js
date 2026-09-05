@@ -7,6 +7,7 @@ const authMiddleware = require('../middleware/auth');
 const fs = require('fs');
 const path = require('path');
 const upDistricts = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/up_districts.json'), 'utf-8'));
+const { UP_JURISDICTION_DATA } = require('../../public/js/up-jurisdiction');
 
 // GET /api/analytics
 router.get('/', authMiddleware, async (req, res, next) => {
@@ -205,6 +206,40 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
       });
       
       return res.json(allDistrictsData);
+    }
+
+    // Apply the "Left Join" for District Admin or State Admin drilling down
+    if (isDistrictDrilldown && query.district && UP_JURISDICTION_DATA[query.district]) {
+      const dData = UP_JURISDICTION_DATA[query.district];
+      const allBodies = [];
+      dData.municipalCorporations.forEach(name => allBodies.push({ type: 'Nagar Nigam', name }));
+      dData.municipalCouncils.forEach(name => allBodies.push({ type: 'Nagar Palika Parishad', name }));
+      dData.townCouncils.forEach(name => allBodies.push({ type: 'Nagar Panchayat', name }));
+      
+      const completeDistrictData = allBodies.map(body => {
+        const found = aggregated.find(a => a._id && a._id.name === body.name && a._id.type === body.type);
+        if (found) return found;
+        return {
+          _id: body,
+          totalClusters: 0,
+          activeClusters: 0,
+          resolvedClusters: 0,
+          pendingClusters: 0,
+          criticalClusters: 0,
+          avgPriority: 0,
+          totalAffected: 0,
+          totalComplaints: 0
+        };
+      });
+
+      // Preserve any DB entities that weren't in the static list
+      aggregated.forEach(a => {
+        if (!completeDistrictData.find(c => c._id && c._id.name === a._id.name && c._id.type === a._id.type)) {
+          completeDistrictData.push(a);
+        }
+      });
+      
+      return res.json(completeDistrictData);
     }
 
     res.json(aggregated);

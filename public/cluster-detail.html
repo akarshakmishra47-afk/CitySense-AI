@@ -109,6 +109,12 @@
     </div>
   </main>
 
+  <!-- Image Lightbox Modal -->
+  <div id="img-lightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);cursor:zoom-out;display:none;align-items:center;justify-content:center;">
+    <img id="img-lightbox-src" src="" alt="Full size" style="max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;box-shadow:0 0 60px rgba(0,0,0,0.8);">
+    <div style="position:absolute;top:1.5rem;right:2rem;color:#fff;font-size:2rem;cursor:pointer;" onclick="document.getElementById('img-lightbox').style.display='none'">✕</div>
+  </div>
+
   <script src="/js/app.js"></script>
   <script src="/js/cluster.js"></script>
 </body>

@@ -5,8 +5,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadDashboardData() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlDistrict = urlParams.get('district');
+    let urlDistrict = urlParams.get('district');
     const urlCorp = urlParams.get('corp');
+    
+    // Normalize old geojson names to our current jurisdictions
+    if (urlDistrict === "Kanpur") urlDistrict = "Kanpur Nagar";
+    if (urlDistrict === "Allahabad") urlDistrict = "Prayagraj";
 
     // Fetch auth to determine role
     const authRes = await fetch('/api/auth/me');
@@ -622,9 +626,12 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
                        mouseout: function(e) {
                            geoLayer.resetStyle(e.target);
                        },
-                       click: function(e) {
-                           window.location.href = '/admin.html?district=' + encodeURIComponent(dName);
-                       }
+                        click: function(e) {
+                            let linkName = dName;
+                            if (linkName === "Kanpur") linkName = "Kanpur Nagar";
+                            if (linkName === "Allahabad") linkName = "Prayagraj";
+                            window.location.href = '/admin.html?district=' + encodeURIComponent(linkName);
+                        }
                    });
                }
            }).addTo(map);

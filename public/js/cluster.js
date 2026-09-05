@@ -65,7 +65,18 @@ document.addEventListener('DOMContentLoaded', async () => {
               </div>
               <p class="text-xs text-secondary mt-4">AI-generated insight intended to support investigation. Physical conditions should be verified by authorized personnel.</p>
             </div>
-          ` : ''}
+          ` : `
+            <div class="panel" style="border: 1px dashed var(--border-color); text-align:center; padding: 2.5rem 2rem;">
+              <div style="font-size:2.5rem; margin-bottom:0.75rem;">🤖</div>
+              <div style="font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:0.5rem;">No AI Analysis Yet</div>
+              <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1.5rem;">Run AI root cause analysis to get an actionable hypothesis and recommended action for this problem cluster.</div>
+              <button id="btn-generate-ai" class="btn btn-primary" style="padding:0.75rem 2rem; font-size:1rem; display:inline-flex; align-items:center; gap:0.5rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Generate AI Analysis
+              </button>
+              <p id="ai-gen-msg" class="text-xs mt-3" style="color:var(--text-tertiary);"></p>
+            </div>
+          `}
           
           <div class="panel">
             <div class="panel-header">Timeline</div>
@@ -91,9 +102,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <p class="text-sm text-primary mb-2">${cc.aiSummary || cc.description}</p>
                   ${cc.imageUrl ? `
                     <div class="mb-3">
-                      <a href="${cc.imageUrl}" target="_blank">
-                        <img src="${cc.imageUrl}" alt="Citizen uploaded evidence" style="max-height: 120px; border-radius: var(--radius); border: 1px solid var(--border-color); object-fit: cover; cursor: pointer;">
-                      </a>
+                      <img src="${cc.imageUrl}" alt="Citizen uploaded evidence"
+                        style="max-height: 120px; border-radius: var(--radius); border: 1px solid var(--border-color); object-fit: cover; cursor: zoom-in;"
+                        onclick="(function(el){ var lb=document.getElementById('img-lightbox'); var lbSrc=document.getElementById('img-lightbox-src'); lbSrc.src=el.src; lb.style.display='flex'; })(this)">
                     </div>
                   ` : ''}
                   <div class="text-xs text-secondary flex gap-4">
@@ -170,6 +181,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       </div>
     `;
+
+    // Generate AI Analysis button
+    const btnGenAI = document.getElementById('btn-generate-ai');
+    if (btnGenAI) {
+      btnGenAI.addEventListener('click', async () => {
+        const msg = document.getElementById('ai-gen-msg');
+        btnGenAI.disabled = true;
+        btnGenAI.textContent = '⏳ Analysing with AI...';
+        if (msg) msg.textContent = 'This may take a few seconds...';
+        try {
+          const r = await fetch(`/api/ai/analyze-cluster/${id}`, { method: 'POST' });
+          if (!r.ok) throw new Error((await r.json()).error || 'Failed');
+          if (msg) msg.textContent = '✅ Done! Reloading...';
+          setTimeout(() => location.reload(), 800);
+        } catch (err) {
+          btnGenAI.disabled = false;
+          btnGenAI.innerHTML = '🤖 Generate AI Analysis';
+          if (msg) { msg.textContent = '❌ ' + err.message; msg.style.color = 'var(--critical)'; }
+        }
+      });
+    }
 
     // Status Update Logic
     const btnUpdate = document.getElementById('btn-update-status');
