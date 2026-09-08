@@ -17,12 +17,12 @@ function resolveDistrict(req) {
   const { role, district } = req.user;
   if (role === DISTRICT_ROLE) {
     if (!district) return { district: null, error: 'No district assigned to your account.' };
-    return { district, error: null };
+     return { district: normalizeDistrict(district), error: null };
   }
   if (role === STATE_ROLE) {
     const qd = (req.query.district || '').trim();
     if (!qd) return { district: null, error: 'district query parameter is required for State Admin.' };
-    return { district: qd, error: null };
+      return { district: normalizeDistrict(qd), error: null };
   }
   return { district: null, error: 'Access denied. District or State admin role required.' };
 }

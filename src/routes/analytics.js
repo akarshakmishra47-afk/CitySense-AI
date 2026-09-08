@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const upDistricts = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/up_districts.json'), 'utf-8'));
 const { UP_JURISDICTION_DATA } = require('../../public/js/up-jurisdiction');
+const { normalizeDistrict } = require('../services/jurisdiction');
 
 // GET /api/analytics
 router.get('/', authMiddleware, async (req, res, next) => {
@@ -15,15 +16,15 @@ router.get('/', authMiddleware, async (req, res, next) => {
     let query = {};
     if (req.user.role === 'admin_ward') {
       query.ward = req.user.ward;
-      if (req.user.district) query.district = req.user.district;
+      if (req.user.district) query.district = normalizeDistrict(req.user.district);
     } else if (req.user.role === 'admin_city') {
       query.municipalCorp = req.user.municipalCorp;
-      if (req.user.district) query.district = req.user.district;
+      if (req.user.district) query.district = normalizeDistrict(req.user.district);
     } else if (req.user.role === 'admin_district') {
-      query.district = req.user.district;
+      query.district = normalizeDistrict(req.user.district);
     } else if (req.user.role === 'admin_state') {
       query.state = req.user.state;
-      if (req.query.district) query.district = req.query.district; // Allow drill-down filtering
+      if (req.query.district) query.district = normalizeDistrict(req.query.district); // Allow drill-down filtering
     }
 
     // 1. Reports by category (using MongoDB Aggregation)
@@ -107,15 +108,15 @@ router.get('/predictions', authMiddleware, async (req, res, next) => {
     let query = {};
     if (req.user.role === 'admin_ward') {
       query.ward = req.user.ward;
-      if (req.user.district) query.district = req.user.district;
+      if (req.user.district) query.district = normalizeDistrict(req.user.district);
     } else if (req.user.role === 'admin_city') {
       query.municipalCorp = req.user.municipalCorp;
-      if (req.user.district) query.district = req.user.district;
+      if (req.user.district) query.district = normalizeDistrict(req.user.district);
     } else if (req.user.role === 'admin_district') {
-      query.district = req.user.district;
+      query.district = normalizeDistrict(req.user.district);
     } else if (req.user.role === 'admin_state') {
       query.state = req.user.state;
-      if (req.query.district) query.district = req.query.district;
+      if (req.query.district) query.district = normalizeDistrict(req.query.district);
     }
 
     const clusters = await ComplaintCluster.find(query).limit(10);
@@ -139,13 +140,13 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
     if (role === 'admin_state') {
       query.state = req.user.state;
       if (req.query.district) {
-        query.district = req.query.district;
+        query.district = normalizeDistrict(req.query.district);
         isDistrictDrilldown = true;
       } else {
         groupByField = '$district'; // State sees districts
       }
     } else if (role === 'admin_district') {
-      query.district = req.user.district;
+      query.district = normalizeDistrict(req.user.district);
       isDistrictDrilldown = true;
     } else if (role === 'admin_city') {
       query.municipalCorp = req.user.municipalCorp;

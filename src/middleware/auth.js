@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { normalizeDistrict, normalizeLocalBodyId } = require('../services/jurisdiction');
 const JWT_SECRET = process.env.JWT_SECRET || 'citysense_secret_key_123!';
 
 const authMiddleware = (req, res, next) => {
@@ -8,6 +9,8 @@ const authMiddleware = (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    decoded.district = normalizeDistrict(decoded.district);
+    decoded.localBodyId = normalizeLocalBodyId(decoded.localBodyId);
     req.user = decoded;
     next();
   } catch (err) {

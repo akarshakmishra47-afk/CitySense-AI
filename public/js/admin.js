@@ -145,6 +145,10 @@ async function loadDashboardData() {
 
     // View Switching Logic
     if (isStateView || isDistrictView) {
+      const districtSearchBar = document.querySelector('.dashboard-search-bar');
+      if (districtSearchBar) {
+        districtSearchBar.style.display = isStateView ? 'block' : 'none';
+      }
       // 1. Show Visualizations
       document.getElementById('priority-list').style.display = 'none';
       if (document.getElementById('priority-heading')) document.getElementById('priority-heading').style.display = 'none';
@@ -779,7 +783,8 @@ function renderLocalBodyView(clusters, corpName, districtName, analyticsData) {
             <div class="mt-2">
               <img src="${complaint.imageUrl}" alt="Complaint Photo" style="max-height:120px;border-radius:4px;object-fit:cover;cursor:pointer;" onclick="window.open('${complaint.imageUrl}','_blank')">
             </div>` : ''}
-          ${complaint.aiSummary ? `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:4px;font-size:0.8rem;color:#93c5fd;">🤖 ${complaint.aiSummary}</div>` : ''}
+          ${complaint.aiSummary ? `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:4px;font-size:0.8rem;color:#93c5fd;"><strong>AI Problem Summary:</strong> ${complaint.aiSummary}</div>` : ''}
+          <div style="margin-top:0.5rem;padding:0.65rem;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:4px;font-size:0.8rem;color:#a7f3d0;"><strong>AI Recommended Solution:</strong> ${c.recommendedAction || 'Inspect the location, assign the responsible team, and update the status after verification.'}</div>
         </div>`).join('') : '<div style="font-size:0.85rem;color:var(--text-tertiary);margin-top:0.5rem;">No individual complaint details available.</div>';
 
       return `
@@ -821,13 +826,12 @@ function renderLocalBodyView(clusters, corpName, districtName, analyticsData) {
             <span>📅 <strong>${fmtDate(c.createdAt)}</strong></span>
           </div>
 
-          <!-- Collapsible Citizen Reports -->
+          <!-- Citizen Reports -->
           <div>
-            <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';" 
-              style="font-size:0.8rem;font-weight:700;color:var(--primary-brand);background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
-              ▶ View ${complaints.length} Citizen Report${complaints.length !== 1 ? 's' : ''}
-            </button>
-            <div style="display:none;">${complaintsHTML}</div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--primary-brand);padding:0.4rem 0;">
+              ${complaints.length} Citizen Report${complaints.length !== 1 ? 's' : ''}
+            </div>
+            <div>${complaintsHTML}</div>
           </div>
 
           <div class="mt-3 pt-3 flex justify-between" style="border-top:1px solid var(--border-color);">

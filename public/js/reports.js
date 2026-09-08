@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const res = await fetch('/api/complaints');
     if (!res.ok) throw new Error('Failed to load reports');
     const complaints = await res.json();
+    const points = document.getElementById('report-points');
+    if (points) points.textContent = `${complaints.length * 10} pts`;
     
     if (complaints.length === 0) {
       container.innerHTML = '<p class="text-muted">You have not submitted any reports yet.</p>';

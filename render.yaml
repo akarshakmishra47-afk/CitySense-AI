@@ -9,6 +9,10 @@ services:
         sync: false # Requires manual entry in Render dashboard (e.g., MongoDB Atlas URI)
       - key: NODE_VERSION
         value: 18.17.0
+      - key: GEMINI_API_KEY
+        sync: false # Requires manual entry in Render dashboard
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
       - key: GROQ_API_KEY
         sync: false # Requires manual entry in Render dashboard
       - key: JWT_SECRET

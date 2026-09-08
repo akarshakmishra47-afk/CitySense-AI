@@ -12,20 +12,77 @@ const AiResponseSchema = z.object({
   keywords: z.array(z.string())
 });
 
+let aiClient = null;
 let groq = null;
-const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
-if (apiKey) {
-  groq = new Groq({ apiKey: apiKey });
+let geminiApiKey = null;
+let textModel = 'qwen/qwen3.8-27b';
+
+if (process.env.GEMINI_API_KEY) {
+  geminiApiKey = process.env.GEMINI_API_KEY;
+  textModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+} else if (process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+  groq = new Groq({ apiKey });
+  aiClient = groq;
+}
+
+async function createCompletion(options) {
+  if (!geminiApiKey) {
+    return aiClient.chat.completions.create(options);
+  }
+
+  const systemMessages = options.messages.filter((message) => message.role === 'system');
+  const contents = options.messages
+    .filter((message) => message.role !== 'system')
+    .map((message) => ({
+      role: message.role === 'assistant' ? 'model' : 'user',
+      parts: (Array.isArray(message.content) ? message.content : [{ type: 'text', text: message.content }])
+        .map((part) => {
+          if (part.type === 'image_url') {
+            const match = part.image_url.url.match(/^data:([^;]+);base64,(.+)$/);
+            return match ? { inlineData: { mimeType: match[1], data: match[2] } } : null;
+          }
+          return { text: part.text };
+        })
+        .filter(Boolean)
+    }));
+
+  const request = { contents };
+  if (systemMessages.length) {
+    request.systemInstruction = {
+      parts: [{ text: systemMessages.map((message) => message.content).join('\n') }]
+    };
+  }
+  if (options.response_format?.type === 'json_object') {
+    request.generationConfig = { responseMimeType: 'application/json' };
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(options.model)}:generateContent?key=${encodeURIComponent(geminiApiKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    }
+  );
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.error?.message || `Gemini request failed with status ${response.status}`);
+  }
+
+  return {
+    choices: [{ message: { content: body.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '' } }]
+  };
 }
 
 async function analyzeComplaint(description, durationDays = 0) {
-  if (!groq) {
+  if (!aiClient && !geminiApiKey) {
     throw new Error("AI is not configured. Missing API key.");
   }
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "qwen/qwen3.8-27b",
+    const response = await createCompletion({
+      model: textModel,
       messages: [
         {
           role: "system",
@@ -81,7 +138,7 @@ const RootCauseSchema = z.object({
 });
 
 async function generateRootCause(clusterCategory, descriptions) {
-  if (!groq) {
+  if (!aiClient && !geminiApiKey) {
     // Fallback if no API key
     return {
       probableRootCause: `Pattern of ${clusterCategory} issues detected`,
@@ -92,8 +149,8 @@ async function generateRootCause(clusterCategory, descriptions) {
   }
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "qwen/qwen3.8-27b",
+    const response = await createCompletion({
+      model: textModel,
       messages: [
         {
           role: "system",
@@ -136,13 +193,13 @@ Output strictly valid JSON matching this schema:
 }
 
 async function generateSystemInsight(categoryData, timelineData) {
-  if (!groq) {
+  if (!aiClient && !geminiApiKey) {
     return "AI insights currently offline due to missing API key.";
   }
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "qwen/qwen3.8-27b",
+    const response = await createCompletion({
+      model: textModel,
       messages: [
         {
           role: "system",
@@ -176,13 +233,13 @@ const MockComplaintSchema = z.object({
 });
 
 async function generateMockComplaints(count = 5) {
-  if (!groq) {
+  if (!aiClient && !geminiApiKey) {
     throw new Error("AI is not configured. Missing API key.");
   }
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "qwen/qwen3.8-27b",
+    const response = await createCompletion({
+      model: textModel,
       messages: [
         {
           role: "system",
@@ -238,10 +295,10 @@ async function transcribeAudio(filePath) {
 }
 
 async function verifyResolution(beforeImageBase64, afterImageBase64, complaintDetails, note) {
-  if (!groq) return { verificationStatus: "UNAVAILABLE", confidence: 0, evidence: ["AI offline."] };
+  if (!aiClient && !geminiApiKey) return { verificationStatus: "UNAVAILABLE", confidence: 0, evidence: ["AI offline."] };
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.2-11b-vision-preview",
+    const response = await createCompletion({
+      model: process.env.GEMINI_API_KEY ? textModel : "llama-3.2-11b-vision-preview",
       messages: [
         {
           role: "user",
@@ -266,10 +323,10 @@ async function verifyResolution(beforeImageBase64, afterImageBase64, complaintDe
 }
 
 async function generateHotspotPredictions(clusterData) {
-  if (!groq) return [{ ward: "N/A", riskLevel: "High", prediction: "AI offline, mock prediction.", recommendation: "Check sensors." }];
+  if (!aiClient && !geminiApiKey) return [{ ward: "N/A", riskLevel: "High", prediction: "AI offline, mock prediction.", recommendation: "Check sensors." }];
   try {
-    const response = await groq.chat.completions.create({
-      model: "qwen/qwen3.8-27b",
+    const response = await createCompletion({
+      model: textModel,
       messages: [
         {
           role: "system",
@@ -302,11 +359,11 @@ Output strictly valid JSON matching this schema:
 }
 
 async function evaluateMunicipalPerformance(municipalCorp, data) {
-  if (!groq) return "AI offline. Based on raw metrics, review pending and critical issues closely.";
+  if (!aiClient && !geminiApiKey) return "AI offline. Based on raw metrics, review pending and critical issues closely.";
   
   try {
-    const response = await groq.chat.completions.create({
-      model: "qwen/qwen3.8-27b",
+    const response = await createCompletion({
+      model: textModel,
       messages: [
         {
           role: "system",

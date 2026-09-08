@@ -3,6 +3,7 @@ const ComplaintCluster = require('../models/ComplaintCluster');
 const { analyzeComplaint, generateRootCause } = require('./ai');
 const { calculateCombinedSimilarity } = require('./clustering');
 const { calculatePriority } = require('./priority-engine');
+const { normalizeDistrict, buildLocalBodyId } = require('./jurisdiction');
 
 async function processNewComplaint(complaintData, userId, imageUrl = null) {
   const { description, duration, latitude, longitude, address, affectedPeople } = complaintData;
@@ -10,6 +11,8 @@ async function processNewComplaint(complaintData, userId, imageUrl = null) {
   const durationDays = parseInt(duration, 10) || 1;
   const lat = parseFloat(latitude) || 0;
   const lng = parseFloat(longitude) || 0;
+  const district = normalizeDistrict(complaintData.district);
+  const localBodyName = complaintData.localBodyName || complaintData.bodyName || null;
 
   // 1. Analyze with AI
   const analysis = await analyzeComplaint(description, durationDays);
@@ -29,9 +32,9 @@ async function processNewComplaint(complaintData, userId, imageUrl = null) {
     imageUrl,
     aiSummary: analysis.summary,
     // Jurisdiction routing fields from Citizen Portal
-    district: complaintData.district || null,
-    localBodyId: complaintData.localBodyId || null,
-    localBodyName: complaintData.localBodyName || complaintData.bodyName || null,
+    district,
+    localBodyId: buildLocalBodyId(district, localBodyName) || complaintData.localBodyId || null,
+    localBodyName,
     bodyType: complaintData.bodyType || null,
     bodyName: complaintData.bodyName || null,
     localBodyType: complaintData.localBodyType || null,

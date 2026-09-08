@@ -69,8 +69,12 @@ Admin Command Center Dashboard (Visualizes clusters and heatmaps)
    # JWT Authentication Secret
    JWT_SECRET="your_secure_secret_key"
    
-   # Generative AI API Key
+   # Google Gemini API key (server-side only)
    GEMINI_API_KEY="your_api_key"
+   GEMINI_MODEL="gemini-3.5-flash-lite"
+
+   # Optional: retained for audio transcription fallback
+   GROQ_API_KEY="your_groq_api_key"
    ```
 
 4. **Seed the Database (Optional for Demo Data):**
