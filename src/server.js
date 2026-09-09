@@ -5,9 +5,6 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 
-// Connect to Database
-connectDB();
-
 const complaintsRoutes = require('./routes/complaints');
 const clustersRoutes = require('./routes/clusters');
 const analyticsRoutes = require('./routes/analytics');
@@ -23,6 +20,17 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadDir));
+
+// Wait for MongoDB per API request so a transient connection failure does not
+// terminate a Vercel function during module initialization.
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 const cronRoutes = require('./routes/cron');
 
@@ -53,7 +61,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
-if (process.env.NODE_ENV !== 'production') {
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`CitySense AI running on http://localhost:${PORT}`);
   });
