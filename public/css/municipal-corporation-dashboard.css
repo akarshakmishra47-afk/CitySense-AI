@@ -65,3 +65,16 @@
   vertical-align: middle;
   border-bottom: 1px solid var(--border-color);
 }
+
+.municipal-corp-theme .map-error {
+  position: absolute;
+  z-index: 500;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 24, 39, 0.9);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}

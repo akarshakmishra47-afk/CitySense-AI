@@ -143,12 +143,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   function initMap() {
     if (!map) {
       map = L.map('map').setView([26.8467, 80.9462], 7);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-      
-      // Dark mode filter
-      map.getPane('tilePane').style.filter = 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)';
+      const tileLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+          maxZoom: 16,
+          errorTileUrl: ''
+        }
+      ).addTo(map);
+
+      tileLayer.on('tileerror', () => {
+        const mapElement = document.getElementById('map');
+        if (mapElement && !mapElement.querySelector('.map-error')) {
+          const message = document.createElement('div');
+          message.className = 'map-error';
+          message.textContent = 'Map tiles are temporarily unavailable.';
+          mapElement.appendChild(message);
+        }
+      });
     }
 
     markers.forEach(m => map.removeLayer(m));
