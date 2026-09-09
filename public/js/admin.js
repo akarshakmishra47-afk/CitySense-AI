@@ -2,15 +2,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadDashboardData();
 });
 
+const DISTRICT_NAME_ALIASES = {
+  'Allahabad': 'Prayagraj',
+  'Faizabad': 'Ayodhya',
+  'Jyotiba Phule Nagar': 'Amroha',
+  'Bara Banki': 'Barabanki',
+  'Kanpur': 'Kanpur Nagar',
+  'Lakhimpur Kheri': 'Kheri',
+  'Rae Bareli': 'Raebareli',
+  'Sant Ravi Das Nagar': 'Bhadohi',
+  'Siddharth Nagar': 'Siddharthnagar'
+};
+
+function normalizeDistrictName(value) {
+  return DISTRICT_NAME_ALIASES[value] || value;
+}
+
 async function loadDashboardData() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     let urlDistrict = urlParams.get('district');
     const urlCorp = urlParams.get('corp');
     
-    // Normalize old geojson names to our current jurisdictions
-    if (urlDistrict === "Kanpur") urlDistrict = "Kanpur Nagar";
-    if (urlDistrict === "Allahabad") urlDistrict = "Prayagraj";
+    urlDistrict = normalizeDistrictName(urlDistrict);
 
     // Fetch auth to determine role
     const authRes = await fetch('/api/auth/me');
@@ -557,7 +571,7 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
     fetch('/data/up_districts.geojson').then(r => r.json()).then(geoData => {
        if (urlDistrict) {
            // District View: filter and show only the specific district
-           const districtFeature = geoData.features.filter(f => f.properties.district_name === urlDistrict);
+           const districtFeature = geoData.features.filter(f => normalizeDistrictName(f.properties.district_name) === urlDistrict);
            if (districtFeature.length > 0) {
                const districtLayer = L.geoJSON(districtFeature, {
                    style: {
@@ -583,7 +597,7 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
            // State View: Choropleth Map of all districts
            const geoLayer = L.geoJSON(geoData, {
                style: function(feature) {
-                   const dName = feature.properties.district_name;
+                   const dName = normalizeDistrictName(feature.properties.district_name);
                    const hInfo = hierarchyData.find(h => h._id === dName);
                     let fillColor = '#111827'; // sleek dark fill
                     let weight = 1;
@@ -608,7 +622,7 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
                     };
                },
                onEachFeature: function(feature, layer) {
-                   const dName = feature.properties.district_name;
+                   const dName = normalizeDistrictName(feature.properties.district_name);
                    const hInfo = hierarchyData.find(h => h._id === dName);
                    
                    let tooltipContent = `<div style="text-align:center;"><b>${dName}</b>`;
@@ -631,10 +645,7 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
                            geoLayer.resetStyle(e.target);
                        },
                         click: function(e) {
-                            let linkName = dName;
-                            if (linkName === "Kanpur") linkName = "Kanpur Nagar";
-                            if (linkName === "Allahabad") linkName = "Prayagraj";
-                            window.location.href = '/admin.html?district=' + encodeURIComponent(linkName);
+                            window.location.href = '/admin.html?district=' + encodeURIComponent(dName);
                         }
                    });
                }

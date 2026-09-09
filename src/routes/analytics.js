@@ -184,7 +184,7 @@ router.get('/hierarchy', authMiddleware, async (req, res, next) => {
     // Apply the "Left Join" for State Admin looking at all districts
     if (role === 'admin_state' && !req.query.district) {
       const allDistrictsData = upDistricts.map(districtName => {
-        const found = aggregated.find(a => a._id === districtName);
+        const found = aggregated.find(a => normalizeDistrict(a._id) === districtName);
         if (found) return found;
         
         // Return zero-data state

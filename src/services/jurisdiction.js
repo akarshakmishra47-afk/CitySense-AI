@@ -1,4 +1,12 @@
 const DISTRICT_ALIASES = new Map([
+  ['allahabad', 'Prayagraj'],
+  ['faizabad', 'Ayodhya'],
+  ['jyotiba phule nagar', 'Amroha'],
+  ['bara banki', 'Barabanki'],
+  ['kanpur', 'Kanpur Nagar'],
+  ['lakhimpur kheri', 'Kheri'],
+  ['sant ravi das nagar', 'Bhadohi'],
+  ['siddharth nagar', 'Siddharthnagar'],
   ['rae bareli', 'Raebareli'],
   ['rae-bareli', 'Raebareli'],
   ['raebareli', 'Raebareli']
