@@ -18,6 +18,32 @@ function normalizeDistrictName(value) {
   return DISTRICT_NAME_ALIASES[value] || value;
 }
 
+function pointInRing(point, ring) {
+  const [longitude, latitude] = point;
+  let inside = false;
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+    const [currentLongitude, currentLatitude] = ring[index];
+    const [previousLongitude, previousLatitude] = ring[previous];
+    const intersects = ((currentLatitude > latitude) !== (previousLatitude > latitude))
+      && (longitude < (previousLongitude - currentLongitude) * (latitude - currentLatitude)
+        / (previousLatitude - currentLatitude) + currentLongitude);
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInDistrict(point, feature) {
+  if (!feature?.geometry) return false;
+  const polygons = feature.geometry.type === 'Polygon'
+    ? [feature.geometry.coordinates]
+    : feature.geometry.coordinates;
+
+  return polygons.some(polygon => {
+    const [outerRing, ...holes] = polygon;
+    return pointInRing(point, outerRing) && !holes.some(hole => pointInRing(point, hole));
+  });
+}
+
 async function loadDashboardData() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -572,6 +598,14 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
        if (urlDistrict) {
            // District View: filter and show only the specific district
            const districtFeature = geoData.features.filter(f => normalizeDistrictName(f.properties.district_name) === urlDistrict);
+           const districtFeatures = districtFeature;
+           const districtClusters = clusters.filter(cluster => {
+             if (!Number.isFinite(cluster.latitude) || !Number.isFinite(cluster.longitude)) return false;
+             return districtFeatures.some(feature => pointInDistrict([cluster.longitude, cluster.latitude], feature));
+           });
+           if (districtClusters.length !== clusters.length) {
+             console.warn(`Hidden ${clusters.length - districtClusters.length} cluster marker(s) outside the ${urlDistrict} boundary.`);
+           }
            if (districtFeature.length > 0) {
                const districtLayer = L.geoJSON(districtFeature, {
                    style: {
@@ -584,7 +618,7 @@ function initVisualizations(analyticsData, clusters, urlDistrict, hierarchyData)
            }
            
            // Overlay the specific clusters as dots
-           clusters.forEach(c => {
+           districtClusters.forEach(c => {
               if (c.latitude && c.longitude) {
                 const color = c.priorityScore >= 90 ? '#ef4444' : (c.priorityScore >= 75 ? '#f59e0b' : '#3b82f6');
                 const circle = L.circleMarker([c.latitude, c.longitude], {
